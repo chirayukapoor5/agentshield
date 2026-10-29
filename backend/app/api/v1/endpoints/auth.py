@@ -1,11 +1,28 @@
-from fastapi import APIRouter
+from app.core.security import hash_password
+from app.db.session import SessionLocal
+from app.models.models import Organization, User
 
-from app.api.v1.endpoints import agents, audit, auth, policies, websites
 
-api_router = APIRouter()
-api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
-api_router.include_router(websites.router, prefix="/websites", tags=["websites"])
-api_router.include_router(agents.router, prefix="/agents", tags=["agents"])
-api_router.include_router(policies.router, prefix="/policies", tags=["policies"])
-api_router.include_router(audit.router, prefix="/audit-events", tags=["audit"])
+def create_demo_data() -> None:
+    db = SessionLocal()
+    try:
+        org = db.query(Organization).first()
+        if org is None:
+            org = Organization(name="Demo Org", slug="demo-org")
+            db.add(org)
+            db.commit()
+            db.refresh(org)
 
+        user = db.query(User).filter(User.email == "demo@agentshield.local").first()
+        if user is None:
+            user = User(
+                organization_id=org.id,
+                email="demo@agentshield.local",
+                full_name="Demo Admin",
+                password_hash=hash_password("password123"),
+                is_active=True,
+            )
+            db.add(user)
+            db.commit()
+    finally:
+        db.close()

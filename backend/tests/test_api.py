@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ipaddress
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -15,11 +16,22 @@ def safe_url_validation(url: str) -> bool:
     parsed = urlparse(url)
     if parsed.scheme not in {"http", "https"}:
         return False
+
     host = parsed.hostname or ""
     if not host or host in {"localhost", "127.0.0.1", "::1"}:
         return False
-    if host.endswith(".internal") or host.startswith("10."):
+
+    try:
+        resolved = ipaddress.ip_address(host)
+    except ValueError:
+        resolved = None
+
+    if resolved is not None and (resolved.is_private or resolved.is_loopback or resolved.is_reserved or resolved.is_multicast):
         return False
+
+    if host.endswith(".internal"):
+        return False
+
     return True
 
 
@@ -66,7 +78,6 @@ def run_scan(db: Session, website: Website) -> dict:
         verification_status="confirmed",
         is_confirmed=True,
     )
-
     db.add(finding)
     db.commit()
 
@@ -78,4 +89,3 @@ def run_scan(db: Session, website: Website) -> dict:
         "security_score": scan.security_score,
         "summary": scan.summary,
     }
-

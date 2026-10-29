@@ -1,2 +1,1 @@
-"""Services package."""
-
+"""Service package."""

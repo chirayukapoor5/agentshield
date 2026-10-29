@@ -1,43 +1,28 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
-from app.api.v1.api import api_router
-from app.core.config import settings
-from app.db.init_db import create_demo_data
-from app.db.session import engine
-from app.models.models import Base
-
-app = FastAPI(
-    title=settings.APP_NAME,
-    version="0.1.0",
-    description="AgentShield API for AI-agent compatibility and security assessment.",
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-Base.metadata.create_all(bind=engine)
-create_demo_data()
-
-app.include_router(api_router, prefix="/api/v1")
+from app.core.security import hash_password
+from app.db.session import SessionLocal
+from app.models.models import Organization, User
 
 
-@app.get("/health")
-def healthcheck() -> dict:
-    return {"status": "ok", "service": settings.APP_NAME}
+def create_demo_data() -> None:
+    db = SessionLocal()
+    try:
+        org = db.query(Organization).first()
+        if org is None:
+            org = Organization(name="Demo Org", slug="demo-org")
+            db.add(org)
+            db.commit()
+            db.refresh(org)
 
-
-@app.get("/")
-def root() -> dict:
-    return {
-        "name": settings.APP_NAME,
-        "environment": settings.APP_ENV,
-        "docs": "/docs",
-        "status": "operational",
-    }
-
+        user = db.query(User).filter(User.email == "demo@agentshield.local").first()
+        if user is None:
+            user = User(
+                organization_id=org.id,
+                email="demo@agentshield.local",
+                full_name="Demo Admin",
+                password_hash=hash_password("password123"),
+                is_active=True,
+            )
+            db.add(user)
+            db.commit()
+    finally:
+        db.close()

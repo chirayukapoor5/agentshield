@@ -41,4 +41,3 @@ class AgentOut(BaseModel):
     is_active: bool
     permissions: dict
     created_at: datetime
-

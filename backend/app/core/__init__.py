@@ -1,2 +1,1 @@
-"""API endpoints package."""
-
+"""API endpoint package."""

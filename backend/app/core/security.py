@@ -1,61 +1,42 @@
-from datetime import datetime, timedelta, timezone
-from typing import Any
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-
+from app.api.v1.api import api_router
 from app.core.config import settings
-from app.db.session import SessionLocal
-from app.models.models import User
+from app.db.base import Base
+from app.db.init_db import create_demo_data
+from app.db.session import engine
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+app = FastAPI(
+    title=settings.APP_NAME,
+    version="0.1.0",
+    description="AgentShield API for AI-agent compatibility and security assessment.",
+)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+Base.metadata.create_all(bind=engine)
+create_demo_data()
 
-
-def verify_password(password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(password, hashed_password)
-
-
-def create_access_token(subject: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode = {"sub": subject, "exp": expire}
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-
-
-def decode_access_token(token: str) -> dict[str, Any]:
-    try:
-        return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-    except JWTError as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
+app.include_router(api_router, prefix="/api/v1")
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+@app.get("/health")
+def healthcheck() -> dict:
+    return {"status": "ok", "service": settings.APP_NAME}
 
 
-def get_current_user(db=Depends(get_db), token: str = Depends(oauth2_scheme)) -> User:
-    payload = decode_access_token(token)
-    email: str | None = payload.get("sub")
-    if email is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token missing subject")
-    user = db.query(User).filter(User.email == email).first()
-    if user is None:
-        raise HTTPException(status_code=401, detail="User not found")
-    return user
-
-
-def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
-    if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
-
+@app.get("/")
+def root() -> dict:
+    return {
+        "name": settings.APP_NAME,
+        "environment": settings.APP_ENV,
+        "docs": "/docs",
+        "status": "operational",
+    }

@@ -20,4 +20,3 @@ class PolicyOut(BaseModel):
     decision_mode: str
     rules: dict
     created_at: datetime
-

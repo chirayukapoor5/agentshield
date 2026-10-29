@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_active_user, get_db, hash_password
-from app.models.models import Agent, AgentCredential, User
+from app.models.models import Agent, User
 from app.schemas.agent import AgentCreate, AgentOut
 
 router = APIRouter()
@@ -14,7 +14,7 @@ def list_agents(db: Session = Depends(get_db), current_user: User = Depends(get_
     return [AgentOut(**agent.__dict__) for agent in agents]
 
 
-@router.post("", response_model=AgentOut, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=AgentOut, status_code=201)
 def create_agent(payload: AgentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     agent = Agent(
         organization_id=current_user.organization_id,
@@ -56,4 +56,3 @@ def revoke_key(agent_id: int, db: Session = Depends(get_db), current_user: User 
     agent.is_active = False
     db.commit()
     return {"status": "revoked", "agent_id": agent.id}
-

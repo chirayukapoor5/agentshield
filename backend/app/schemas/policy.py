@@ -16,4 +16,3 @@ class WebsiteOut(BaseModel):
     status: str
     owner_verified: bool
     created_at: datetime
-

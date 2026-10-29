@@ -1,16 +1,14 @@
-from datetime import datetime
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
-from pydantic import BaseModel
+from app.core.security import get_current_active_user, get_db
+from app.models.models import AuditEvent, User
+from app.schemas.audit import AuditEventOut
+
+router = APIRouter()
 
 
-class AuditEventOut(BaseModel):
-    id: int
-    organization_id: int
-    user_id: int | None = None
-    event_type: str
-    resource_type: str
-    resource_id: str | None = None
-    request_id: str | None = None
-    details: dict
-    created_at: datetime
-
+@router.get("", response_model=list[AuditEventOut])
+def list_audit_events(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    events = db.query(AuditEvent).filter(AuditEvent.organization_id == current_user.organization_id).order_by(AuditEvent.id.desc()).all()
+    return [AuditEventOut(**event.__dict__) for event in events]

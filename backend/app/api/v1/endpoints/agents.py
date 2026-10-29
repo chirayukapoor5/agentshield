@@ -1,10 +1,8 @@
-from datetime import datetime
-
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_active_user, get_db
-from app.models.models import Organization, Scan, User, Website
+from app.models.models import Finding, Scan, Website
 from app.schemas.website import WebsiteCreate, WebsiteOut
 from app.services.scan_service import run_scan
 
@@ -12,14 +10,13 @@ router = APIRouter()
 
 
 @router.get("", response_model=list[WebsiteOut])
-def list_websites(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    org_id = current_user.organization_id
-    websites = db.query(Website).filter(Website.organization_id == org_id).all()
-    return [WebsiteOut(**w.__dict__) for w in websites]
+def list_websites(db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+    websites = db.query(Website).filter(Website.organization_id == current_user.organization_id).all()
+    return [WebsiteOut(**website.__dict__) for website in websites]
 
 
-@router.post("", response_model=WebsiteOut, status_code=status.HTTP_201_CREATED)
-def create_website(payload: WebsiteCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+@router.post("", response_model=WebsiteOut, status_code=201)
+def create_website(payload: WebsiteCreate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     website = Website(
         organization_id=current_user.organization_id,
         name=payload.name,
@@ -34,7 +31,7 @@ def create_website(payload: WebsiteCreate, db: Session = Depends(get_db), curren
 
 
 @router.get("/{website_id}", response_model=WebsiteOut)
-def get_website(website_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+def get_website(website_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     website = db.query(Website).filter(Website.id == website_id, Website.organization_id == current_user.organization_id).first()
     if not website:
         raise HTTPException(status_code=404, detail="Website not found")
@@ -42,7 +39,7 @@ def get_website(website_id: int, db: Session = Depends(get_db), current_user: Us
 
 
 @router.post("/{website_id}/verify", response_model=WebsiteOut)
-def verify_website(website_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+def verify_website(website_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     website = db.query(Website).filter(Website.id == website_id, Website.organization_id == current_user.organization_id).first()
     if not website:
         raise HTTPException(status_code=404, detail="Website not found")
@@ -53,28 +50,39 @@ def verify_website(website_id: int, db: Session = Depends(get_db), current_user:
     return WebsiteOut(**website.__dict__)
 
 
-@router.post("/{website_id}/scans", response_model=dict)
-def create_scan(website_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+@router.post("/{website_id}/scans")
+def create_scan(website_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     website = db.query(Website).filter(Website.id == website_id, Website.organization_id == current_user.organization_id).first()
     if not website:
         raise HTTPException(status_code=404, detail="Website not found")
-    result = run_scan(db, website)
-    return result
+    return run_scan(db, website)
 
 
-@router.get("/{website_id}/findings", response_model=list[dict])
-def get_findings(website_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+@router.get("/{website_id}/findings")
+def get_findings(website_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     website = db.query(Website).filter(Website.id == website_id, Website.organization_id == current_user.organization_id).first()
     if not website:
         raise HTTPException(status_code=404, detail="Website not found")
-    findings = db.query(Website).filter(Website.id == website_id).first()
+    findings = db.query(Finding).filter(Finding.website_id == website.id).all()
+    return [{
+        "id": item.id,
+        "website_id": item.website_id,
+        "title": item.title,
+        "severity": item.severity,
+        "category": item.category,
+        "description": item.description,
+        "evidence": item.evidence,
+        "affected_url": item.affected_url,
+        "recommended_fix": item.recommended_fix,
+        "confidence": item.confidence,
+        "verification_status": item.verification_status,
+        "is_confirmed": item.is_confirmed,
+    } for item in findings]
+
+
+@router.get("/{website_id}/reports")
+def get_reports(website_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+    website = db.query(Website).filter(Website.id == website_id, Website.organization_id == current_user.organization_id).first()
+    if not website:
+        raise HTTPException(status_code=404, detail="Website not found")
     return []
-
-
-@router.get("/{website_id}/reports", response_model=list[dict])
-def get_reports(website_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    website = db.query(Website).filter(Website.id == website_id, Website.organization_id == current_user.organization_id).first()
-    if not website:
-        raise HTTPException(status_code=404, detail="Website not found")
-    return []
-

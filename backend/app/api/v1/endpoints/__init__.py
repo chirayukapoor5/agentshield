@@ -1,12 +1,15 @@
-html, body {
-  margin: 0;
-  padding: 0;
-  background: #0b1020;
-  color: #edf2ff;
-}
+from datetime import datetime
 
-* { box-sizing: border-box; }
+from pydantic import BaseModel
 
-a { color: inherit; text-decoration: none; }
-button, input { font: inherit; }
 
+class AuditEventOut(BaseModel):
+    id: int
+    organization_id: int
+    user_id: int | None = None
+    event_type: str
+    resource_type: str
+    resource_id: str | None = None
+    request_id: str | None = None
+    details: dict
+    created_at: datetime
