@@ -12,7 +12,7 @@ from app.api.v1.api import api_router
 def create_demo_data() -> None:
     db = SessionLocal()
     try:
-        org = db.query(Organization).first()
+        org = db.query(Organization).filter(Organization.slug == "demo-org").first()
         if org is None:
             org = Organization(name="Demo Org", slug="demo-org")
             db.add(org)

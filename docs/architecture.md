@@ -1,49 +1,18 @@
-# AgentShield
+# Architecture overview
 
-AgentShield is a modular SaaS platform for AI-agent compatibility and security assessment. The project is designed to help website owners and operators evaluate how AI agents discover, access, and interact with their sites while applying policy controls and monitoring for risky behavior.
+- **Frontend:** Next.js dashboard for authentication, website ownership challenges, scan status, check evidence, findings, and audit history.
+- **API:** FastAPI with versioned authentication, website, agent, policy, report, and audit routes.
+- **Persistence:** SQLAlchemy models with Alembic migrations; SQLite is the local default, and PostgreSQL is supported by Compose.
+- **Ownership:** Random DNS TXT challenge values are returned once and stored as hashes. Scans are denied until the server confirms the TXT value.
+- **Scanner:** Synchronous safe scanner using DNS validation, pinned-IP HTTP connections, hostname-checked TLS, same-host redirect handling, HTML parsing without script execution, and bounded request/response resources.
+- **Evidence:** Scan records persist checks, findings, timestamps, scanner version, scores, and score coverage. Old prototype scan rows have no scanner version and are excluded from current scan views.
+- **Audit:** Organization-scoped events record registration, verification, scanning, report generation, agent changes, and policy creation.
 
-## Features
+Scores are unweighted averages across applicable checks: a passed check contributes 1, a finding contributes 0, and unavailable checks are excluded. Compatibility uses page metadata/semantics, sitemap, robots, OpenAPI discovery, and the limited agent-readiness indicator. Security uses HTTPS availability, HTTP-to-HTTPS behavior, certificate validation, selected response headers, and common public configuration paths. The returned coverage count identifies how many of those checks were evaluable. Scores summarize this subset only; they are not overall security ratings.
 
-- Website registration and verification workflow.
-- Safe compatibility scanning for public websites.
-- Persistent findings and score tracking.
-- Multi-tenant user and organization model.
-- Agent identity and key management.
-- Policy engine with dry-run enforcement.
-- Audit event log and activity monitoring.
-- Optional MCP compatibility layer and report generation.
-- Responsive SaaS dashboard structure.
+## Current boundaries
 
-## Local development
-
-```bash
-cp env.example .env
-python -m venv .venv
-source .venv/bin/activate
-pip install -r backend/requirements.txt
-cd backend
-pytest
-uvicorn app.main:app --reload
-```
-
-## API docs
-
-Once the backend is running, visit:
-
-- Swagger UI: http://localhost:8000/docs
-- OpenAPI JSON: http://localhost:8000/openapi.json
-
-## Architecture notes
-
-- Backend: FastAPI + SQLAlchemy + Pydantic.
-- Database: SQLite for local development and tests; Postgres for production.
-- Frontend: Next.js app prepared for UI screens.
-- Security: JWT auth, tenant scoping, SSRF-safe URL checks, audit logging, and policy enforcement.
-
-## Known limitations
-
-This MVP intentionally focuses on core workflow validity and safe implementation boundaries. It does not claim to fully detect every prompt-injection scenario or guarantee compatibility across arbitrary AI-agent ecosystems. All live integrations and scans require explicit configuration and authorization.
-
-## Optional MCP integration
-
-A local compatibility layer exists in `backend/app/mcp_server.py` to model the read-only tool surface for `list_authorized_websites`, `get_compatibility_report`, `get_security_findings`, `search_agent_activity`, `get_policy_status`, and `generate_report`. Production deployments should use the official maintained MCP SDK and a remote transport with authenticated clients and strict permission enforcement.
+- DNS TXT ownership challenge only; the verification proof needs to be configured by the domain operator.
+- No authenticated or active vulnerability testing, JavaScript execution, deep crawl, or security certification.
+- The scanner is synchronous and process-local; use an isolated worker with enforced network egress controls before production deployment.
+- Agent activity ingestion, enforced policy decisions, remote MCP, scheduled scans, and production account lifecycle are not implemented.

@@ -1,133 +1,24 @@
-# AgentShield
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.db
+.env
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+coverage.xml
+htmlcov/
 
-AgentShield is a production-minded cybersecurity SaaS platform for AI-agent compatibility and security. It helps website owners and operators understand how AI agents discover, access, and interact with their properties while applying enforceable safeguards.
+# Node
+frontend/node_modules/
+frontend/.next/
+frontend/out/
 
-## Architecture proposal
+# IDE
+.vscode/
+.idea/
 
-- Frontend: Next.js + TypeScript + Tailwind-inspired CSS for a responsive SaaS dashboard.
-- Backend: FastAPI, Pydantic v2, SQLAlchemy, Alembic for schema management.
-- Database: PostgreSQL in production, with SQLite fallback for local development and tests.
-- Security: JWT-based auth, tenant-aware authorization, rate limiting, SSRF-safe scanning worker, audit logging, policy enforcement.
-- Integration: REST API plus optional MCP server support behind the same policy engine.
-- Background jobs: Celery/RQ-style asynchronous tasks via FastAPI background tasks for local MVP; future-ready worker separation.
-
-## Repository tree
-
-```text
-.
-├── README.md
-├── docker-compose.yml
-├── env.example
-├── .gitignore
-├── backend/
-│   ├── alembic/
-│   │   ├── env.py
-│   │   └── versions/
-│   ├── app/
-│   │   ├── api/
-│   │   │   └── v1/
-│   │   │       ├── api.py
-│   │   │       └── endpoints/
-│   │   │           ├── agents.py
-│   │   │           ├── audit.py
-│   │   │           ├── policies.py
-│   │   │           └── websites.py
-│   │   ├── core/
-│   │   │   ├── config.py
-│   │   │   └── security.py
-│   │   ├── db/
-│   │   │   ├── base.py
-│   │   │   ├── init_db.py
-│   │   │   └── session.py
-│   │   ├── models/
-│   │   │   ├── __init__.py
-│   │   │   └── models.py
-│   │   ├── schemas/
-│   │   │   ├── __init__.py
-│   │   │   ├── agent.py
-│   │   │   ├── audit.py
-│   │   │   ├── policy.py
-│   │   │   ├── report.py
-│   │   │   ├── scan.py
-│   │   │   └── website.py
-│   │   ├── services/
-│   │   │   ├── auth.py
-│   │   │   ├── policy_engine.py
-│   │   │   ├── report_service.py
-│   │   │   ├── scan_service.py
-│   │   │   └── security.py
-│   │   ├── main.py
-│   │   └── __init__.py
-│   ├── tests/
-│   │   └── test_api.py
-│   ├── alembic.ini
-│   ├── pyproject.toml
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend/
-│   ├── app/
-│   │   ├── agents/
-│   │   ├── dashboard/
-│   │   ├── websites/
-│   │   ├── globals.css
-│   │   ├── layout.tsx
-│   │   └── page.tsx
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── next.config.mjs
-│   └── .eslintrc.json
-└── docs/
-    ├── threat-model.md
-    ├── architecture.md
-    └── deployment.md
-```
-
-## Threat model summary
-
-AgentShield addresses common AI-agent risks with defense in depth:
-
-- Treat retrieved website content and tool outputs as untrusted input.
-- Isolate scanners behind SSRF-safe network controls and redirect validation.
-- Enforce server-side authorization for every action and tool call.
-- Keep trust boundaries separate between instructions, retrieved content, and policy decisions.
-- Minimize data exposed to models and logs.
-- Require explicit approval for high-impact operations.
-- Log auditable events for access, rate limits, denials, and policy reasons.
-- Prevent cross-tenant access through tenant scoping and checks in every route.
-
-## Implementation checklist
-
-- [x] Repository structure created.
-- [ ] Database foundation and migrations.
-- [ ] Authentication and user lifecycle.
-- [ ] Tenant-aware website registration and verification.
-- [ ] Safe compatibility scanner and findings engine.
-- [ ] Security policies and audit events.
-- [ ] REST API and OpenAPI endpoints.
-- [ ] Optional MCP integration.
-- [ ] Frontend dashboard and workflow screens.
-- [ ] Automated tests and CI checks.
-- [ ] Deployment, docs, and operational guidance.
-
-## Run locally
-
-```bash
-cp env.example .env
-docker compose up --build
-```
-
-Then open:
-
-- API: http://localhost:8000/docs
-- Frontend: http://localhost:3000
-
-## Security and limitations
-
-- The platform is designed to help website owners assess compatibility and risk but cannot guarantee complete compatibility or prevention of all adversarial behavior.
-- Passive checks are probabilistic and should be combined with explicit controls and review.
-- External SaaS integrations require credentials and should be configured explicitly.
-
-## License
-
-MIT
-
+# System
+.DS_Store

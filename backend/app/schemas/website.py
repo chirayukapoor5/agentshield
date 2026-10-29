@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, HttpUrl
 
 
 class Token(BaseModel):
@@ -29,7 +29,7 @@ class UserOut(BaseModel):
 
 class WebsiteCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
-    url: str = Field(..., min_length=5, max_length=500)
+    url: HttpUrl
 
 
 class WebsiteOut(BaseModel):
@@ -40,4 +40,21 @@ class WebsiteOut(BaseModel):
     url: str
     status: str
     owner_verified: bool
+    verification_status: str
+    verified_at: datetime | None = None
     created_at: datetime
+
+
+class WebsiteCreated(WebsiteOut):
+    verification_token: str
+    verification_dns_name: str
+    verification_instructions: str
+
+
+class WebsiteVerificationOut(BaseModel):
+    website_id: int
+    verification_status: str
+    verification_dns_name: str
+    verification_token: str
+    expires_at: datetime
+    instructions: str

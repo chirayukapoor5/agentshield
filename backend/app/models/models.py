@@ -45,6 +45,12 @@ class Website(Base):
     url = Column(String(500), nullable=False)
     status = Column(String(50), default="registered", nullable=False)
     owner_verified = Column(Boolean, default=False, nullable=False)
+    verification_token_hash = Column(String(64), nullable=True)
+    verification_expires_at = Column(DateTime, nullable=True)
+    verification_status = Column(String(30), default="pending", nullable=False)
+    verification_attempts = Column(Integer, default=0, nullable=False)
+    verification_locked_until = Column(DateTime, nullable=True)
+    verified_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     organization = relationship("Organization", back_populates="websites")
@@ -60,19 +66,24 @@ class Scan(Base):
     id = Column(Integer, primary_key=True, index=True)
     website_id = Column(Integer, ForeignKey("websites.id"), nullable=False)
     status = Column(String(50), default="completed", nullable=False)
-    compatibility_score = Column(Float, default=0.0, nullable=False)
-    security_score = Column(Float, default=0.0, nullable=False)
+    compatibility_score = Column(Float, nullable=True)
+    security_score = Column(Float, nullable=True)
+    scanner_version = Column(String(40), nullable=True)
+    check_results = Column(JSON, nullable=True)
     started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     finished_at = Column(DateTime, nullable=True)
     summary = Column(Text, nullable=True)
 
     website = relationship("Website", back_populates="scans")
+    findings = relationship("Finding", back_populates="scan")
 
 
 class Finding(Base):
     __tablename__ = "findings"
     id = Column(Integer, primary_key=True, index=True)
     website_id = Column(Integer, ForeignKey("websites.id"), nullable=False)
+    scan_id = Column(Integer, ForeignKey("scans.id"), nullable=True, index=True)
+    finding_type = Column(String(120), nullable=True)
     severity = Column(String(50), nullable=False)
     title = Column(String(255), nullable=False)
     category = Column(String(120), nullable=False)
@@ -83,8 +94,11 @@ class Finding(Base):
     confidence = Column(String(50), default="medium", nullable=False)
     verification_status = Column(String(50), default="pending", nullable=False)
     is_confirmed = Column(Boolean, default=False, nullable=False)
+    detected_at = Column(DateTime, nullable=True)
+    scanner_version = Column(String(40), nullable=True)
 
     website = relationship("Website", back_populates="findings")
+    scan = relationship("Scan", back_populates="findings")
 
 
 class Agent(Base):

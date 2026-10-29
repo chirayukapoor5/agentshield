@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import get_current_active_user, get_db
 from app.models.models import Report, User, Website
+from app.services.audit_service import record_audit_event
 
 router = APIRouter()
 
@@ -35,4 +36,9 @@ def generate_report(website_id: int, db: Session = Depends(get_db), current_user
     from app.services.report_service import build_report_payload, save_report
     payload = build_report_payload(db, website_id)
     saved = save_report(db, website_id, payload)
+    record_audit_event(db, current_user, "report.generated", "report", saved.id, {
+        "website_id": website_id,
+        "format": saved.format,
+    })
+    db.commit()
     return {"report_id": saved.id, **payload}

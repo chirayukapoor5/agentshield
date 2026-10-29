@@ -1,4 +1,19 @@
-/// <reference types="next" />
-/// <reference types="next/image-types/global" />
+import type { Metadata } from 'next';
+import './globals.css';
 
-// NOTE: This file should not be edited.
+export const metadata: Metadata = {
+  title: 'AgentShield | AI agent security',
+  description: 'A dashboard preview for AI-agent compatibility and website security.',
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}

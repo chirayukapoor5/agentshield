@@ -1,15 +1,8 @@
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-sqlalchemy==2.0.35
-alembic==1.13.3
-psycopg[binary]==3.2.1
-pydantic==2.9.2
-pydantic-settings==2.5.2
-passlib[bcrypt]==1.7.4
-python-jose[cryptography]==3.9.0
-python-multipart==0.0.9
-httpx==0.27.2
-beautifulsoup4==4.12.2
-email-validator==2.2.0
-pytest==8.3.3
-pytest-asyncio==0.24.0
+FROM python:3.12-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . /app
+EXPOSE 8000
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

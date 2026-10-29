@@ -1,10 +1,13 @@
+from uuid import uuid4
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token, get_current_active_user, get_db, hash_password, verify_password
-from app.models.models import User
+from app.models.models import Organization, User
 from app.schemas.website import Token, UserOut, UserRegister
+from app.services.audit_service import record_audit_event
 
 router = APIRouter()
 
@@ -14,19 +17,25 @@ def register_user(payload: UserRegister, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    org = db.query(User).first()
-    organization_id = 1 if org is None else 1
+    organization = Organization(
+        name=f"{payload.full_name}'s organization",
+        slug=f"org-{uuid4().hex}",
+    )
+    db.add(organization)
+    db.flush()
     user = User(
-        organization_id=organization_id,
+        organization_id=organization.id,
         email=str(payload.email),
         full_name=payload.full_name,
         password_hash=hash_password(payload.password),
         is_active=True,
     )
     db.add(user)
+    db.flush()
+    record_audit_event(db, user, "user.registered", "organization", organization.id)
     db.commit()
     db.refresh(user)
-    return UserOut(**user.__dict__)
+    return UserOut.model_validate(user)
 
 
 @router.post("/login", response_model=Token)

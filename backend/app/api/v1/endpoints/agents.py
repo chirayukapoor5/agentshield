@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.security import get_current_active_user, get_db, hash_password
 from app.models.models import Agent, User
 from app.schemas.agent import AgentCreate, AgentOut
+from app.services.audit_service import record_audit_event
 
 router = APIRouter()
 
@@ -25,6 +26,8 @@ def create_agent(payload: AgentCreate, db: Session = Depends(get_db), current_us
         is_active=True,
     )
     db.add(agent)
+    db.flush()
+    record_audit_event(db, current_user, "agent.created", "agent", agent.id)
     db.commit()
     db.refresh(agent)
     return AgentOut(**agent.__dict__)
@@ -44,6 +47,7 @@ def rotate_key(agent_id: int, db: Session = Depends(get_db), current_user: User 
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     agent.api_key_hash = hash_password(f"rotated-{agent.id}-{current_user.id}")
+    record_audit_event(db, current_user, "agent.key_rotated", "agent", agent.id)
     db.commit()
     return {"status": "rotated", "agent_id": agent.id}
 
@@ -54,5 +58,6 @@ def revoke_key(agent_id: int, db: Session = Depends(get_db), current_user: User 
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     agent.is_active = False
+    record_audit_event(db, current_user, "agent.key_revoked", "agent", agent.id)
     db.commit()
     return {"status": "revoked", "agent_id": agent.id}
