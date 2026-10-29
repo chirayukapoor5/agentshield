@@ -2,9 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_active_user, get_db
-from app.models.models import Finding, Scan, Website
+from app.models.models import User, Website
 from app.schemas.website import WebsiteCreate, WebsiteOut
-from app.services.scan_service import run_scan
 
 router = APIRouter()
 
@@ -55,6 +54,7 @@ def create_scan(website_id: int, db: Session = Depends(get_db), current_user: Us
     website = db.query(Website).filter(Website.id == website_id, Website.organization_id == current_user.organization_id).first()
     if not website:
         raise HTTPException(status_code=404, detail="Website not found")
+    from app.services.scan_service import run_scan
     return run_scan(db, website)
 
 
@@ -63,7 +63,7 @@ def get_findings(website_id: int, db: Session = Depends(get_db), current_user: U
     website = db.query(Website).filter(Website.id == website_id, Website.organization_id == current_user.organization_id).first()
     if not website:
         raise HTTPException(status_code=404, detail="Website not found")
-    findings = db.query(Finding).filter(Finding.website_id == website.id).all()
+    findings = db.query(Website.findings.property.mapper.class_).filter_by(website_id=website.id).all()
     return [{
         "id": item.id,
         "website_id": item.website_id,
@@ -85,6 +85,7 @@ def get_reports(website_id: int, db: Session = Depends(get_db), current_user: Us
     website = db.query(Website).filter(Website.id == website_id, Website.organization_id == current_user.organization_id).first()
     if not website:
         raise HTTPException(status_code=404, detail="Website not found")
+    from app.models.models import Scan
     scans = db.query(Scan).filter(Scan.website_id == website.id).order_by(Scan.id.desc()).all()
     return [{
         "id": scan.id,

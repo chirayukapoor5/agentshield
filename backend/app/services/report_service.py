@@ -1,38 +1,40 @@
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import datetime
+
 from sqlalchemy.orm import Session
 
-from app.core.security import get_current_active_user, get_db
-from app.models.models import Report, User, Website
-from app.services.report_service import build_report_payload, save_report
-
-router = APIRouter()
+from app.models.models import Finding, Report, Website
 
 
-@router.get("", response_model=list[dict])
-def list_reports(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    reports = (
-        db.query(Report)
-        .join(Website, Report.website_id == Website.id)
-        .filter(Website.organization_id == current_user.organization_id)
-        .order_by(Report.id.desc())
-        .all()
-    )
-    return [{
-        "id": report.id,
-        "website_id": report.website_id,
-        "format": report.format,
-        "file_name": report.file_name,
-        "summary": report.summary,
-        "created_at": report.created_at,
-    } for report in reports]
+def build_report_payload(db: Session, website_id: int) -> dict:
+    website = db.query(Website).filter(Website.id == website_id).first()
+    findings = db.query(Finding).filter(Finding.website_id == website_id).all()
+    summary = {
+        "website": website.name if website else "Unknown website",
+        "url": website.url if website else "",
+        "finding_count": len(findings),
+        "highest_severity": max((item.severity for item in findings), default="none"),
+    }
+    return {
+        "website_id": website_id,
+        "format": "json",
+        "summary": summary,
+        "generated_at": datetime.utcnow().isoformat(),
+    }
 
 
-@router.post("/{website_id}", response_model=dict)
-def generate_report(website_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    website = db.query(Website).filter(Website.id == website_id, Website.organization_id == current_user.organization_id).first()
+def save_report(db: Session, website_id: int, payload: dict) -> Report:
+    website = db.query(Website).filter(Website.id == website_id).first()
     if not website:
-        raise HTTPException(status_code=404, detail="Website not found")
+        raise ValueError("Website not found")
 
-    payload = build_report_payload(db, website_id)
-    saved = save_report(db, website_id, payload)
-    return {"report_id": saved.id, **payload}
+    report = Report(
+        organization_id=website.organization_id,
+        website_id=website_id,
+        format=payload.get("format", "json"),
+        file_name=f"report-{website_id}.json",
+        summary=str(payload.get("summary", {})),
+    )
+    db.add(report)
+    db.commit()
+    db.refresh(report)
+    return report

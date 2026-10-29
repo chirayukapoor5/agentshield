@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class Token(BaseModel):
@@ -20,24 +20,24 @@ class UserLogin(BaseModel):
 
 
 class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     email: str
     full_name: str
     is_active: bool = True
 
 
-class AgentCreate(BaseModel):
+class WebsiteCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
-    description: str | None = None
-    permissions: dict = Field(default_factory=dict)
+    url: str = Field(..., min_length=5, max_length=500)
 
 
-class AgentOut(BaseModel):
+class WebsiteOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     organization_id: int
     name: str
-    description: str | None = None
-    api_key_hash: str = "hidden"
-    is_active: bool
-    permissions: dict
+    url: str
+    status: str
+    owner_verified: bool
     created_at: datetime

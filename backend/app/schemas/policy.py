@@ -1,18 +1,23 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class WebsiteCreate(BaseModel):
+class PolicyCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
-    url: str = Field(..., min_length=5, max_length=500)
+    effect: str = "allow"
+    decision_mode: str = "dry_run"
+    rules: dict = Field(default_factory=dict)
+    website_id: int | None = None
 
 
-class WebsiteOut(BaseModel):
+class PolicyOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     organization_id: int
+    website_id: int | None = None
     name: str
-    url: str
-    status: str
-    owner_verified: bool
+    effect: str
+    decision_mode: str
+    rules: dict
     created_at: datetime

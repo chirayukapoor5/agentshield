@@ -1,66 +1,43 @@
-from fastapi.testclient import TestClient
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
 
-from app.main import app
+from app.core.security import create_access_token, get_current_active_user, get_db, hash_password, verify_password
+from app.models.models import User
+from app.schemas.website import Token, UserOut, UserRegister
 
-client = TestClient(app)
-
-
-def test_healthcheck():
-    response = client.get("/health")
-    assert response.status_code == 200
-    assert response.json()["status"] == "ok"
+router = APIRouter()
 
 
-def test_register_and_login():
-    payload = {"email": "user@example.com", "full_name": "Test User", "password": "strongpass123"}
-    res = client.post("/api/v1/auth/register", json=payload)
-    assert res.status_code == 201
+@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+def register_user(payload: UserRegister, db: Session = Depends(get_db)):
+    if db.query(User).filter(User.email == payload.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
 
-    login = client.post("/api/v1/auth/login", data={"username": payload["email"], "password": payload["password"]})
-    assert login.status_code == 200
-    token = login.json()["access_token"]
-    assert token
-
-
-def test_create_website_and_scan():
-    auth = client.post(
-        "/api/v1/auth/login",
-        data={"username": "demo@agentshield.local", "password": "password123"},
+    org = db.query(User).first()
+    organization_id = 1 if org is None else 1
+    user = User(
+        organization_id=organization_id,
+        email=str(payload.email),
+        full_name=payload.full_name,
+        password_hash=hash_password(payload.password),
+        is_active=True,
     )
-    assert auth.status_code == 200
-    token = auth.json()["access_token"]
-    headers = {"Authorization": f"Bearer {token}"}
-
-    website = client.post(
-        "/api/v1/websites",
-        json={"name": "Public docs", "url": "https://example.com"},
-        headers=headers,
-    )
-    assert website.status_code == 201
-    website_id = website.json()["id"]
-
-    scan = client.post(f"/api/v1/websites/{website_id}/scans", headers=headers)
-    assert scan.status_code == 200
-    assert scan.json()["status"] == "completed"
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return UserOut(**user.__dict__)
 
 
-def test_agent_policy_and_audit_endpoints():
-    auth = client.post(
-        "/api/v1/auth/login",
-        data={"username": "demo@agentshield.local", "password": "password123"},
-    )
-    assert auth.status_code == 200
-    token = auth.json()["access_token"]
-    headers = {"Authorization": f"Bearer {token}"}
+@router.post("/login", response_model=Token)
+def login_user(payload: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == payload.username).first()
+    if not user or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = create_access_token(user.email)
+    return Token(access_token=token)
 
-    agents = client.get("/api/v1/agents", headers=headers)
-    assert agents.status_code == 200
 
-    policies = client.get("/api/v1/policies", headers=headers)
-    assert policies.status_code == 200
-
-    audit = client.get("/api/v1/audit-events", headers=headers)
-    assert audit.status_code == 200
-
-    report = client.post("/api/v1/reports/1", headers=headers)
-    assert report.status_code in {200, 404}
+@router.get("/me", response_model=UserOut)
+def get_current_user_info(current_user: User = Depends(get_current_active_user)):
+    return UserOut(**current_user.__dict__)

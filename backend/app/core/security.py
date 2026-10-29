@@ -1,42 +1,62 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime, timedelta, timezone
+from typing import Any
 
-from app.api.v1.api import api_router
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
 from app.core.config import settings
-from app.db.base import Base
-from app.db.init_db import create_demo_data
-from app.db.session import engine
+from app.db.session import get_db
+from app.models.models import User
 
-app = FastAPI(
-    title=settings.APP_NAME,
-    version="0.1.0",
-    description="AgentShield API for AI-agent compatibility and security assessment.",
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-Base.metadata.create_all(bind=engine)
-create_demo_data()
-
-app.include_router(api_router, prefix="/api/v1")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
-@app.get("/health")
-def healthcheck() -> dict:
-    return {"status": "ok", "service": settings.APP_NAME}
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
 
 
-@app.get("/")
-def root() -> dict:
-    return {
-        "name": settings.APP_NAME,
-        "environment": settings.APP_ENV,
-        "docs": "/docs",
-        "status": "operational",
-    }
+def verify_password(password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(password, hashed_password)
+
+
+def create_access_token(subject: str) -> str:
+    expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode = {"sub": subject, "exp": datetime.now(timezone.utc) + expires_delta}
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def decode_access_token(token: str) -> dict[str, Any]:
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    except JWTError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
+    return payload
+
+
+def get_current_active_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> User:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = decode_access_token(token)
+        email: str | None = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except HTTPException:
+        raise
+    except Exception as exc:  # pragma: no cover
+        raise credentials_exception from exc
+
+    user = db.query(User).filter(User.email == email).first()
+    if user is None or not user.is_active:
+        raise credentials_exception
+    return user
