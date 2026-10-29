@@ -1,43 +1,97 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.core.security import create_access_token, get_current_active_user, get_db, hash_password, verify_password
-from app.models.models import User
-from app.schemas.agent import Token, UserLogin, UserOut, UserRegister
+from app.core.security import get_current_active_user, get_db
+from app.models.models import Finding, Scan, Website
+from app.schemas.website import WebsiteCreate, WebsiteOut
+from app.services.scan_service import run_scan
 
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-def register_user(payload: UserRegister, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.email == payload.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
+@router.get("", response_model=list[WebsiteOut])
+def list_websites(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    websites = db.query(Website).filter(Website.organization_id == current_user.organization_id).all()
+    return [WebsiteOut(**website.__dict__) for website in websites]
 
-    org = db.query(User).first()
-    organization_id = 1 if org is None else 1
-    user = User(
-        organization_id=organization_id,
-        email=str(payload.email),
-        full_name=payload.full_name,
-        password_hash=hash_password(payload.password),
-        is_active=True,
+
+@router.post("", response_model=WebsiteOut, status_code=201)
+def create_website(payload: WebsiteCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    website = Website(
+        organization_id=current_user.organization_id,
+        name=payload.name,
+        url=payload.url,
+        status="registered",
+        owner_verified=False,
     )
-    db.add(user)
+    db.add(website)
     db.commit()
-    db.refresh(user)
-    return UserOut(**user.__dict__)
+    db.refresh(website)
+    return WebsiteOut(**website.__dict__)
 
 
-@router.post("/login", response_model=Token)
-def login_user(payload: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == payload.username).first()
-    if not user or not verify_password(payload.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = create_access_token(user.email)
-    return Token(access_token=token)
+@router.get("/{website_id}", response_model=WebsiteOut)
+def get_website(website_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    website = db.query(Website).filter(Website.id == website_id, Website.organization_id == current_user.organization_id).first()
+    if not website:
+        raise HTTPException(status_code=404, detail="Website not found")
+    return WebsiteOut(**website.__dict__)
 
 
-@router.get("/me", response_model=UserOut)
-def get_current_user_info(current_user: User = Depends(get_current_active_user)):
-    return UserOut(**current_user.__dict__)
+@router.post("/{website_id}/verify", response_model=WebsiteOut)
+def verify_website(website_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    website = db.query(Website).filter(Website.id == website_id, Website.organization_id == current_user.organization_id).first()
+    if not website:
+        raise HTTPException(status_code=404, detail="Website not found")
+    website.owner_verified = True
+    website.status = "verified"
+    db.commit()
+    db.refresh(website)
+    return WebsiteOut(**website.__dict__)
+
+
+@router.post("/{website_id}/scans")
+def create_scan(website_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    website = db.query(Website).filter(Website.id == website_id, Website.organization_id == current_user.organization_id).first()
+    if not website:
+        raise HTTPException(status_code=404, detail="Website not found")
+    return run_scan(db, website)
+
+
+@router.get("/{website_id}/findings")
+def get_findings(website_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    website = db.query(Website).filter(Website.id == website_id, Website.organization_id == current_user.organization_id).first()
+    if not website:
+        raise HTTPException(status_code=404, detail="Website not found")
+    findings = db.query(Finding).filter(Finding.website_id == website.id).all()
+    return [{
+        "id": item.id,
+        "website_id": item.website_id,
+        "title": item.title,
+        "severity": item.severity,
+        "category": item.category,
+        "description": item.description,
+        "evidence": item.evidence,
+        "affected_url": item.affected_url,
+        "recommended_fix": item.recommended_fix,
+        "confidence": item.confidence,
+        "verification_status": item.verification_status,
+        "is_confirmed": item.is_confirmed,
+    } for item in findings]
+
+
+@router.get("/{website_id}/reports")
+def get_reports(website_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    website = db.query(Website).filter(Website.id == website_id, Website.organization_id == current_user.organization_id).first()
+    if not website:
+        raise HTTPException(status_code=404, detail="Website not found")
+    scans = db.query(Scan).filter(Scan.website_id == website.id).order_by(Scan.id.desc()).all()
+    return [{
+        "id": scan.id,
+        "status": scan.status,
+        "compatibility_score": scan.compatibility_score,
+        "security_score": scan.security_score,
+        "summary": scan.summary,
+        "started_at": scan.started_at,
+        "finished_at": scan.finished_at,
+    } for scan in scans]

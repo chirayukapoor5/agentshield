@@ -1,33 +1,11 @@
-"""Minimal AgentShield MCP compatibility layer.
+from fastapi import APIRouter
 
-This is a safe, local compatibility layer for tool exposure. In production, switch
-this to the maintained official MCP SDK and remote transport with explicit auth.
-"""
+from app.api.v1.endpoints import agents, audit, auth, policies, reports, websites
 
-from __future__ import annotations
-
-from typing import Any
-
-
-def list_authorized_websites() -> list[dict[str, Any]]:
-    return [{"name": "demo website", "status": "approved", "url": "https://example.com"}]
-
-
-def get_compatibility_report(website_id: int) -> dict[str, Any]:
-    return {"website_id": website_id, "compatibility_score": 92, "status": "ok"}
-
-
-def get_security_findings(website_id: int) -> list[dict[str, Any]]:
-    return [{"website_id": website_id, "severity": "medium", "title": "Review document trust boundaries."}]
-
-
-def search_agent_activity(query: str) -> list[dict[str, Any]]:
-    return [{"query": query, "matching_events": 1, "status": "ok"}]
-
-
-def get_policy_status() -> dict[str, Any]:
-    return {"mode": "dry_run", "active_policies": 2, "status": "ok"}
-
-
-def generate_report(website_id: int) -> dict[str, Any]:
-    return {"website_id": website_id, "format": "json", "status": "generated"}
+api_router = APIRouter()
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(websites.router, prefix="/websites", tags=["websites"])
+api_router.include_router(agents.router, prefix="/agents", tags=["agents"])
+api_router.include_router(policies.router, prefix="/policies", tags=["policies"])
+api_router.include_router(audit.router, prefix="/audit-events", tags=["audit"])
+api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
