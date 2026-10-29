@@ -15,6 +15,7 @@ def test_register_and_login():
     payload = {"email": "user@example.com", "full_name": "Test User", "password": "strongpass123"}
     res = client.post("/api/v1/auth/register", json=payload)
     assert res.status_code == 201
+
     login = client.post("/api/v1/auth/login", data={"username": payload["email"], "password": payload["password"]})
     assert login.status_code == 200
     token = login.json()["access_token"]
@@ -26,6 +27,7 @@ def test_create_website_and_scan():
         "/api/v1/auth/login",
         data={"username": "demo@agentshield.local", "password": "password123"},
     )
+    assert auth.status_code == 200
     token = auth.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -47,6 +49,7 @@ def test_agent_policy_and_audit_endpoints():
         "/api/v1/auth/login",
         data={"username": "demo@agentshield.local", "password": "password123"},
     )
+    assert auth.status_code == 200
     token = auth.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -59,3 +62,5 @@ def test_agent_policy_and_audit_endpoints():
     audit = client.get("/api/v1/audit-events", headers=headers)
     assert audit.status_code == 200
 
+    report = client.post("/api/v1/reports/1", headers=headers)
+    assert report.status_code in {200, 404}
