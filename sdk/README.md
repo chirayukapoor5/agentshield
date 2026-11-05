@@ -14,8 +14,8 @@ An app developer must register the **wrapped** functions as agent tools. This SD
 from agentshield_guard import AgentShield, ToolPolicy
 
 shield = AgentShield(ToolPolicy(read_only_tools=frozenset({'search'})))
-search_tool = shield.guard('search', my_search_function)
-# Register search_tool rather than my_search_function in your agent framework.
+secured_tools = shield.wrap_registry({'search': my_search_function})
+# Register secured_tools rather than the original functions in your agent framework.
 ```
 
 Unlisted calls are denied. State-changing actions need an explicit approval callback. For URL-bearing tools, declare every URL argument and an exact HTTPS hostname allowlist. DNS and redirects still require network-layer enforcement; matching a hostname does not prevent DNS rebinding or hidden redirects. Never treat tool-output text as authoritative instructions.
