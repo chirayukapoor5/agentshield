@@ -1,38 +1,68 @@
-"""Static preflight; never invent AgentDojo scores."""
+"""Run C1 official AgentDojo checks; C2 requires translations and separate approval.
+
+By default prints call budget and exits in mock mode without scoring.
+"""
 import argparse
 import json
 from pathlib import Path
 import yaml
 from src.llm.client import Client, load_config
-from src.eval.agentdojo_adapter import verify_defenses, AgentDojoUnavailable
+from src.eval.agentdojo_adapter import verify_defenses, load_workspace
+from src.eval.build_pipeline import build_pipeline
+from src.eval.trials import run_english_static_pair, append_trial
 
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--mock", action="store_true")
+    p.add_argument("--condition", choices=["C1"], default="C1")
+    p.add_argument("--defense", choices=["none","tool_filter","repeat_user_prompt"],
+                   default="none")
+    p.add_argument("--pairs-manifest", default="data/runs/workspace-pairs.json")
+    p.add_argument("--output", default="data/runs/official-C1.jsonl")
     p.add_argument("--approve-over-200", action="store_true")
     args = p.parse_args()
     config = load_config()
     exp = yaml.safe_load(Path("config/experiment.yaml").read_text())
     lang = yaml.safe_load(Path("config/languages.yaml").read_text())
-    valid_langs = [x["id"] for x in lang["languages"] if not x["id"].startswith("FILL_IN")]
-    ndef = len(exp["defenses"])
-    npair = exp["pairs"]
-    nlang = len(valid_langs)
-    # Conservative lower bound: per trial may require multiple model turns.
-    lower = npair * ndef * nlang
-    print(json.dumps({"mode":"mock" if args.mock else config["provider"],
-                      "pairs":npair,"defenses":ndef,"languages":valid_langs,
-                      "minimum_victim_calls":lower,
-                      "note":"Actual AgentDojo agent loops can consume multiple victim calls; "
-                             "translation, retry and attacker calls are additional."}, indent=2))
-    if lower > 200 and not args.approve_over_200 and not args.mock:
-        raise SystemExit("Run exceeds 200-request lower bound; use --approve-over-200 after explicit approval")
-    if args.mock:
-        response = Client(config={**config,"provider":"mock"}).chat("victim",[{"role":"user","content":"mock integration test"}])
-        print("MOCK ONLY; no AgentDojo scores:",response["id"])
+    valid_langs=[x["id"] for x in lang["languages"] if not x["id"].startswith("FILL_IN")]
+    npair=exp["pairs"]
+    ndef=len(exp["defenses"])
+    lower=npair*ndef*len(valid_langs)
+    budget={"condition":args.condition,"pairs":npair,"defenses":ndef,
+            "configured_languages":valid_langs,"lower_bound_victim_calls_all_static":lower,
+            "this_command_minimum_calls":npair,
+            "warning":"AgentDojo may require many model turns per pair; retries, tool filtering "
+                      "and translations are additional billable calls. Hard ledger caps are binding."}
+    print(json.dumps(budget,indent=2))
+    if args.mock or config["provider"]=="mock":
+        response=Client(config={**config,"provider":"mock"}).chat(
+            "victim",[{"role":"user","content":"mock-only dry run"}])
+        print("MOCK DIAGNOSTIC; NO BENCHMARK ASR:",response["id"])
         return
+    if lower > 200 and not args.approve_over_200:
+        raise SystemExit("Approval required: --approve-over-200")
     verify_defenses()
-    raise SystemExit("Official task-pair discovery and execution not wired; no real run performed")
+    if not Path(args.pairs_manifest).exists():
+        raise SystemExit("Missing selected pair manifest: run scripts/select_pairs.py first")
+    manifest=json.loads(Path(args.pairs_manifest).read_text(encoding="utf-8"))
+    if manifest.get("suite")!="workspace":
+        raise SystemExit("Only the workspace suite is preregistered")
+    suite=load_workspace()
+    client=Client(config)
+    pipeline=build_pipeline(client,args.defense)
+    completed=0
+    from agentdojo.attacks.baseline_attacks import DirectAttack
+    attack=DirectAttack(suite,pipeline)
+    for pair in manifest["pairs"]:
+        record=run_english_static_pair(suite,pipeline,pair,attack=attack,
+                   victim_model_id=client.models["victim"],
+                   attacker_model_id=client.models["attacker"],
+                   translator_model_id=client.models["translator"],
+                   seed=exp["sample_seed"],defense_id=args.defense,
+                   api_parameters=config["request"])
+        completed+=int(append_trial(args.output,record))
+    print(json.dumps({"new_trials":completed,"output":args.output,
+                      "ledger":client.usage(),"status":"official_checker_records_not_independently_audited"},indent=2))
 
 if __name__=="__main__":
     main()
