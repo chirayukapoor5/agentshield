@@ -24,6 +24,8 @@ def run_search(*, propose, evaluate, initial, condition, languages, budget=10,
         if any(row["condition"] != condition or row["attempt"] != i + 1 for i, row in enumerate(history)):
             raise ValueError("resume history is inconsistent")
     best = next((row for row in history if row.get("success") is True), None)
+    if best is not None:
+        return {"attempts": len(history), "first_success": best["attempt"], "best": best, "history": history}
     for index in range(len(history), budget):
         proposal = propose(initial, list(history), condition, tuple(languages))
         if not isinstance(proposal, dict):
