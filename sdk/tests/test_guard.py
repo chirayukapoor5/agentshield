@@ -78,3 +78,20 @@ def test_allows_explicitly_approved_execution():
     guard=AgentShield(ToolPolicy(approval_tools=frozenset({"send"})),approve=lambda *_:True)
     assert guard.guard("send",lambda data:seen.append(data))(data="demo") is None
     assert seen==["demo"]
+
+
+def test_wrap_registry_requires_registering_wrapped_result():
+    executed=[]
+    shield=AgentShield(ToolPolicy(read_only_tools=frozenset({"lookup"})))
+    original={"lookup":lambda query: executed.append(query), "delete":lambda path: executed.append(path)}
+    secured=shield.wrap_registry(original)
+    secured["lookup"](query="safe")
+    with pytest.raises(DeniedToolCall):
+        secured["delete"](path="synthetic")
+    assert executed==["safe"]
+
+
+def test_wrap_registry_rejects_noncallables():
+    shield=AgentShield(ToolPolicy())
+    with pytest.raises(TypeError):
+        shield.wrap_registry({"bad": "not callable"})
