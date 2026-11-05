@@ -50,7 +50,7 @@ def test_global_request_cap_across_clients(monkeypatch):
              "base_url":"https://example.invalid/v1",
              "models":{"victim":"v","attacker":"a","translator":"t"},
              "limits":{"max_requests_per_min":10,"max_tokens_per_min":10000,
-                       "max_total_requests":2,"max_total_usd":1}}
+                       "max_total_requests":2,"max_total_usd":1,"max_usd_per_request":0.01}}
         tmp=Path(d)
         calls=[]
         def fake_transport(url,key,payload,timeout):
@@ -71,7 +71,7 @@ def test_rate_limiter_limits_rpm(monkeypatch):
              "base_url":"https://example.invalid/v1",
              "models":{"victim":"v","attacker":"a","translator":"t"},
              "limits":{"max_requests_per_min":1,"max_tokens_per_min":10000,
-                       "max_total_requests":10,"max_total_usd":1}}
+                       "max_total_requests":10,"max_total_usd":1,"max_usd_per_request":0.01}}
         c=create_client(Path(d),cfg,transport=lambda *args: {"choices":[]},clock=lambda:1000.0)
         c.chat("victim",[{"role":"user","content":"a"}])
         with pytest.raises(BudgetExceeded,match="minute"):
