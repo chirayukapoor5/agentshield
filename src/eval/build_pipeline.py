@@ -15,4 +15,4 @@ def build_pipeline(client:Client, defense="none"):
                   temperature=client.request.get("temperature",0))
     return AgentPipeline.from_config(PipelineConfig(
         llm=llm, defense=None if defense=="none" else defense,
-        model_id=None, system_message_name=None, system_message=None))
+        model_id=model, system_message_name=None, system_message=None))
