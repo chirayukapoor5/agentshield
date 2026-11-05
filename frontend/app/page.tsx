@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 
 type User = {
   id: number;
@@ -308,7 +309,7 @@ export default function Page() {
             </div>
           </div>
           <p className="intro-copy">Use your AgentShield API account to view organization data.</p>
-          <p className="helper-text"><a href="/lab" style={{ color: "#70e0a1" }}>Explore public security simulation and verified demo evidence →</a></p>
+          <p className="helper-text"><Link href="/lab" style={{ color: "#70e0a1" }}>Explore public security simulation and verified demo evidence →</Link></p>
           {error && <p className="error-message" role="alert">{error}</p>}
           <form className="form-stack" onSubmit={handleLogin}>
             <label>
@@ -345,7 +346,7 @@ export default function Page() {
             <div>
               <p className="eyebrow">AgentShield</p>
               <h1>Security overview</h1>
-              <p className="helper-text"><a href="/lab" style={{ color: "#70e0a1" }}>Interactive research lab ↗</a></p>
+              <p className="helper-text"><a href="/lab" style={{ color: "#70e0a1" }}>Interactive research lab ↗</Link></p>
             </div>
           </div>
           <div className="account-actions">
