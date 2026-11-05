@@ -140,3 +140,15 @@ class AgentShield:
                 raise DeniedToolCall(f"{decision.tool}: {decision.reason}")
             return fn(**arguments)
         return wrapped
+
+    def wrap_registry(self, tools: Mapping[str, Callable[..., Any]]) -> dict[str, Callable[..., Any]]:
+        """Return a new registry of guarded tools; the original is left untouched.
+
+        Callers MUST register the returned registry, not the original one.
+        Unknown tool names remain wrapped and fail closed at invocation.
+        """
+        if not isinstance(tools, Mapping) or any(
+            not isinstance(name, str) or not callable(fn) for name, fn in tools.items()
+        ):
+            raise TypeError("tools must map tool names to callable handlers")
+        return {name: self.guard(name, handler) for name, handler in tools.items()}
