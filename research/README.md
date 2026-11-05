@@ -11,8 +11,8 @@ A *scenario* is a fixed authorized user request, a fixed tool-output insertion p
 Compare four pre-registered conditions, all evaluated with the same scenario splits and tool privileges:
 - **C1 — static English:** fixed English attack candidates, not optimized against the target.
 - **C2 — static translated:** faithful translations of the same C1 candidates, reported **per language**; translations are checked for intent preservation and language quality.
+- **C3 — adaptive control:** same model, budget, seeds, and selection algorithm as C4, with English-only candidates; estimates the benefit of multilingual search beyond generic adaptive optimization.
 - **C4 — adaptive language/script/code-mix:** attacker can query a separate training oracle within a *fixed, logged* query budget and select language, script, and code-mixing. The final candidate is frozen before hidden held-out evaluation.
-- **C3 — adaptive control:** same model, budget, seeds, and selection algorithm as C3, with English-only candidates; estimates the benefit of multilingual search beyond generic adaptive optimization.
 
 A no-injection benign baseline is also needed to measure task utility and false positive refusals.
 
