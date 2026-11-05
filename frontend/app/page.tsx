@@ -308,6 +308,7 @@ export default function Page() {
             </div>
           </div>
           <p className="intro-copy">Use your AgentShield API account to view organization data.</p>
+          <p className="helper-text"><a href="/lab" style={{ color: "#70e0a1" }}>Explore public security simulation and verified demo evidence →</a></p>
           {error && <p className="error-message" role="alert">{error}</p>}
           <form className="form-stack" onSubmit={handleLogin}>
             <label>
@@ -344,6 +345,7 @@ export default function Page() {
             <div>
               <p className="eyebrow">AgentShield</p>
               <h1>Security overview</h1>
+              <p className="helper-text"><a href="/lab" style={{ color: "#70e0a1" }}>Interactive research lab ↗</a></p>
             </div>
           </div>
           <div className="account-actions">
