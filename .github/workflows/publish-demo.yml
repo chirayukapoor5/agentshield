@@ -1,6 +1,9 @@
 name: publish-agent-shield-demo
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/publish-demo.yml"
   push:
     branches: ["research/multilingual-injection-2026"]
     paths:
