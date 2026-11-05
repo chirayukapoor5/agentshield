@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/publish-demo.yml"
+      - "frontend/app/page.tsx"
   push:
     branches: ["research/multilingual-injection-2026"]
     paths:
