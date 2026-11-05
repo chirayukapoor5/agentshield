@@ -14,8 +14,10 @@ python sdk/examples/demo_stats.py
 ```
 
 ## What was actually observed
+
+CI evidence: [agentshield-sdk-validation run #42050659963](https://github.com/chirayukapoor5/agentshield/actions/runs/42050659963).
 During a local execution of the SDK code in the engineering environment:
-- Unit tests: **11 passed**, 0 failed.
+- Unit tests initially run locally: **11 passed**, 0 failed. After adding registry-wrapper tests, GitHub Actions Python 3.12 reported **13 passed** (Python 3.10 job also passed).
 - Deterministic policy scenarios: **8 / 8** expected decisions matched.
 - Decision breakdown: **2 allowed**, **6 denied**.
 - Calls to real LLM providers: **0**.
