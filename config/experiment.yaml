@@ -1,0 +1,14 @@
+suite: workspace
+pairs: 30
+sample_seed: 20261105
+seeds: [11, 23, 47]
+adaptive_budget: 10
+conditions: [C1, C2, C3, C4]
+defenses: [none, tool_filter, repeat_user_prompt, learned_classifier]
+learned_classifier:
+  provider: FILL_IN
+  model_id: FILL_IN
+  threshold: FILL_IN
+split: {dev: 0.4, tune: 0.3, test: 0.3}
+run_dir: data/runs
+# Mock dry runs validate wiring only. Official AgentDojo checkers are mandatory for research metrics.
