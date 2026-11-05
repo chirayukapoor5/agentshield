@@ -66,7 +66,7 @@ class Client:
         with self._db() as con:
             con.execute("""CREATE TABLE IF NOT EXISTS requests (
                 id INTEGER PRIMARY KEY, ts REAL NOT NULL, cache_key TEXT NOT NULL,
-                role TEXT NOT NULL, tokens_reserved INTEGER NOT NULL,
+                role TEXT NOT NULL, tokens_reserved INTEGER NOT NULL, usd_reserved REAL NOT NULL DEFAULT 0,
                 status TEXT NOT NULL, provider TEXT NOT NULL, model TEXT NOT NULL
             )""")
             con.execute("CREATE INDEX IF NOT EXISTS requests_ts ON requests(ts)")
@@ -76,6 +76,8 @@ class Client:
                     raise ConfigError(f"{field} must be a positive integer for real calls")
             if float(self.limits.get("max_total_usd", 0)) <= 0:
                 raise ConfigError("max_total_usd=0 disables all paid calls (fail closed)")
+            if type(self.limits.get("max_usd_per_request")) not in (int, float) or self.limits["max_usd_per_request"] <= 0:
+                raise ConfigError("positive max_usd_per_request required for USD budget reservation")
             if not os.environ.get(self.config.get("api_key_env", "API_KEY")):
                 raise ConfigError("configured API key environment variable is missing")
             if self.models["victim"] == self.models["attacker"]:
@@ -96,11 +98,13 @@ class Client:
         with self._mutex:
             with self._db() as con:
                 con.execute("BEGIN IMMEDIATE")
-                total = con.execute("SELECT COUNT(*) FROM requests WHERE provider != 'mock'").fetchone()[0]
+                total, reserved_usd = con.execute("SELECT COUNT(*), COALESCE(SUM(usd_reserved),0) FROM requests WHERE provider != 'mock'").fetchone()
                 last = self.clock() - 60
                 used, toks = con.execute(
                     "SELECT COUNT(*), COALESCE(SUM(tokens_reserved),0) FROM requests WHERE ts > ? AND provider != 'mock'",
                     (last,)).fetchone()
+                if reserved_usd + self.limits["max_usd_per_request"] > self.limits["max_total_usd"] + 1e-9:
+                    raise BudgetExceeded("USD cap reached")
                 if total >= self.limits["max_total_requests"]:
                     raise BudgetExceeded("global total request cap reached")
                 if used >= self.limits["max_requests_per_min"]:
@@ -108,15 +112,15 @@ class Client:
                 if toks + tokens > self.limits["max_tokens_per_min"]:
                     raise BudgetExceeded("reserved token-per-minute cap reached")
                 con.execute(
-                    "INSERT INTO requests(ts,cache_key,role,tokens_reserved,status,provider,model) VALUES (?,?,?,?,?,?,?)",
-                    (self.clock(), key, role, tokens, "reserved", self.provider, model))
+                    "INSERT INTO requests(ts,cache_key,role,tokens_reserved,usd_reserved,status,provider,model) VALUES (?,?,?,?,?,?,?,?)",
+                    (self.clock(), key, role, tokens, self.limits["max_usd_per_request"], "reserved", self.provider, model))
                 return con.execute("SELECT last_insert_rowid()").fetchone()[0]
 
     def _record(self, key, role, model, tokens, status):
         with self._db() as con:
             con.execute(
-                "INSERT INTO requests(ts,cache_key,role,tokens_reserved,status,provider,model) VALUES (?,?,?,?,?,?,?)",
-                (self.clock(), key, role, tokens, status, self.provider, model))
+                "INSERT INTO requests(ts,cache_key,role,tokens_reserved,usd_reserved,status,provider,model) VALUES (?,?,?,?,?,?,?,?)",
+                (self.clock(), key, role, tokens, 0, status, self.provider, model))
 
     def _finish(self, request_id, status):
         with self._db() as con:
@@ -184,5 +188,5 @@ class Client:
 
     def usage(self):
         with self._db() as con:
-            rows = con.execute("SELECT provider, status, COUNT(*), SUM(tokens_reserved) FROM requests GROUP BY provider,status").fetchall()
-        return [{"provider": p, "status": s, "requests": n, "reserved_tokens": t} for p,s,n,t in rows]
+            rows = con.execute("SELECT provider, status, COUNT(*), SUM(tokens_reserved), SUM(usd_reserved) FROM requests GROUP BY provider,status").fetchall()
+        return [{"provider": p, "status": s, "requests": n, "reserved_tokens": t, "reserved_usd": usd} for p,s,n,t,usd in rows]
