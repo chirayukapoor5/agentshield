@@ -136,7 +136,7 @@ class Client:
         with urllib.request.urlopen(req, timeout=timeout) as response:
             return json.loads(response.read())
 
-    def chat(self, role, messages, *, temperature=None, max_tokens=None, retries=3):
+    def chat(self, role, messages, *, temperature=None, max_tokens=None, retries=3, extra=None):
         if role not in ("victim", "attacker", "translator"):
             raise ValueError("unrecognized role")
         if not isinstance(messages, list):
@@ -146,7 +146,7 @@ class Client:
             "temperature": self.request.get("temperature", 0.0) if temperature is None else temperature,
             "max_tokens": self.request.get("max_tokens", 1024) if max_tokens is None else max_tokens,
         }
-        payload = {"model": model, "messages": messages, **params}
+        payload = {"model": model, "messages": messages, **params}\n        if extra is not None:\n            if not isinstance(extra, dict) or any(k in payload for k in extra):\n                raise ValueError("invalid or overlapping extra OpenAI-compatible parameters")\n            payload.update(extra)
         key = hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
         path = self.cache_dir / (key + ".json")
         if path.exists():
