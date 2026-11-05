@@ -1,0 +1,37 @@
+name: research-demo-website
+on:
+  push:
+    branches: ["research/**"]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/demo-website.yml"
+  pull_request:
+    paths:
+      - "frontend/**"
+      - ".github/workflows/demo-website.yml"
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "frontend/package-lock.json"
+      - name: Install locked dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+      - name: Build demo and dashboard
+        working-directory: frontend
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run build
+      - name: Confirm lab route compiled
+        working-directory: frontend
+        run: |
+          test -f .next/server/app/lab/page.js || test -f .next/server/app/lab.html
+          echo "AgentShield Lab route successfully compiled."
