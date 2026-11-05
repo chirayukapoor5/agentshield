@@ -13,6 +13,6 @@ def build_pipeline(client:Client, defense="none"):
     model="mock-victim" if client.provider=="mock" else client.models["victim"]
     llm=OpenAILLM(BudgetedOpenAI(client),model,
                   temperature=client.request.get("temperature",0))
-    return AgentPipeline.from_config(PipelineConfig(
+    # AgentDojo derives tool-filter model identity from llm.name for custom objects.\n    llm.name = model\n    return AgentPipeline.from_config(PipelineConfig(
         llm=llm, defense=None if defense=="none" else defense,
         model_id=model, system_message_name=None, system_message=None))
