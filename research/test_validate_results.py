@@ -32,8 +32,8 @@ class ValidatorTests(unittest.TestCase):
             validate(trial(seed=True), 1)
 
     def test_english_adaptive_constraint(self):
-        with self.assertRaisesRegex(ValueError, "C4"):
-            validate(trial(condition="C4", language="es"), 1)
+        with self.assertRaisesRegex(ValueError, "C3"):
+            validate(trial(condition="C3", language="es"), 1)
 
     def test_static_no_search(self):
         with self.assertRaisesRegex(ValueError, "oracle"):
