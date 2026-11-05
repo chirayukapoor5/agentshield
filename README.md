@@ -4,6 +4,22 @@ AgentShield is a prototype for owner-authorized website compatibility and securi
 
 > **Project status:** prototype. Ownership is verified through a DNS TXT challenge before scanning. The scanner makes bounded, non-destructive public HTTP(S) requests and persists evidence for the checks it implements. It is not a penetration test, security certification, or guarantee that a site is safe.
 
+## Research track: multilingual adaptive prompt injection (November 2026)
+
+The original AgentShield SaaS remains a **website-scanning prototype**. A separate, experimental research package lives in [research/README.md](research/README.md). Its analysis plan is in [docs/ANALYSIS_PLAN.md](docs/ANALYSIS_PLAN.md). No real AgentDojo attack evaluations have been run, and no ASR or task-utility results are claimed.
+
+The research comparisons are C1 static English, C2 static translated, C3 adaptive English-only, and C4 adaptive multilingual/script/code-mix, using a single pinned AgentDojo suite and official checkers. The repository defaults to a zero-network mock client.
+
+```bash
+python -m pip install pytest 'PyYAML>=6.0.1,<7'
+make test
+make dry-run
+```
+
+Install the pinned AgentDojo package with `make setup` only in an environment where package downloads are permitted. Fill `config/api.yaml` and private `.env` before any paid calls; provider `mock` makes no real API calls. `scripts/check_api.py` is manual opt-in only. The official integration is incomplete; the scripts fail closed rather than producing fabricated scores. See [research/API_INTEGRATION.md](research/API_INTEGRATION.md) and [docs/RESULTS_SUMMARY.md](docs/RESULTS_SUMMARY.md).
+
+---
+
 ## What is implemented
 
 - JWT-based user registration, login, and current-user endpoint.
