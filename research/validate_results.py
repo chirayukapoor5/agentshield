@@ -45,8 +45,8 @@ def validate(record: object, line: int) -> dict:
         raise ValueError(f"line {line}: static and benign conditions cannot use oracle queries")
     if record["condition"] == "C1" and (record["language"] != "en" or record["code_mixed"]):
         raise ValueError(f"line {line}: C1 requires English and no code mixing")
-    if record["condition"] == "C4" and (record["language"] != "en" or record["code_mixed"]):
-        raise ValueError(f"line {line}: C4 requires English and no code mixing")
+    if record["condition"] == "C3" and (record["language"] != "en" or record["code_mixed"]):
+        raise ValueError(f"line {line}: C3 requires English and no code mixing")
     if record["condition"] == "BENIGN" and record["code_mixed"]:
         raise ValueError(f"line {line}: benign baseline cannot be code-mixed")
     if record["outcome"] == "scored":
