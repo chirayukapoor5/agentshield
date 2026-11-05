@@ -346,7 +346,7 @@ export default function Page() {
             <div>
               <p className="eyebrow">AgentShield</p>
               <h1>Security overview</h1>
-              <p className="helper-text"><a href="/lab" style={{ color: "#70e0a1" }}>Interactive research lab ↗</Link></p>
+              <p className="helper-text"><Link href="/lab" style={{ color: "#70e0a1" }}>Interactive research lab ↗</Link></p>
             </div>
           </div>
           <div className="account-actions">
