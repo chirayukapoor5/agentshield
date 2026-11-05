@@ -1,5 +1,6 @@
 .PHONY: setup test dry-run static adaptive tables plots
 PYTHON ?= python
+export PYTHONPATH := .:$(PYTHONPATH)
 setup:
 	$(PYTHON) -m pip install -r research/requirements.txt
 test:
