@@ -4,6 +4,22 @@ AgentShield is a prototype for owner-authorized website compatibility and securi
 
 > **Project status:** prototype. Ownership is verified through a DNS TXT challenge before scanning. The scanner makes bounded, non-destructive public HTTP(S) requests and persists evidence for the checks it implements. It is not a penetration test, security certification, or guarantee that a site is safe.
 
+## AgentShield Guard — one-package protective SDK prototype
+
+A new self-contained Python SDK wraps application-owned agent tools with explicit allowlists, approval gates, exact HTTPS hostname rules and fail-closed denial. Install directly from this checkout (not yet published to PyPI):
+
+```bash
+python -m pip install ./sdk
+python sdk/examples/quickstart.py
+python sdk/examples/demo_stats.py
+```
+
+Source: [sdk/](sdk/) · [documentation](sdk/README.md) · [reproduced local demo](docs/SDK_DEMO_RESULTS.md).
+
+**Current limitation:** The application must register the SDK's wrapped functions for enforcement; this is not an automatic universal agent firewall. Synthetic policy decisions are **not** AgentDojo ASR or real-world prompt-injection efficacy. External API access, signed policies, proxy interception and framework integrations are not implemented by this SDK.
+
+---
+
 ## Research track: multilingual adaptive prompt injection (November 2026)
 
 The original AgentShield SaaS remains a **website-scanning prototype**. A separate, experimental research package lives in [research/README.md](research/README.md). Its analysis plan is in [docs/ANALYSIS_PLAN.md](docs/ANALYSIS_PLAN.md). No real AgentDojo attack evaluations have been run, and no ASR or task-utility results are claimed.
