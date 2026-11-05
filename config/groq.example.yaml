@@ -1,0 +1,21 @@
+# GroqCloud profile — non-secret template only.
+# Keep config/api.yaml in mock mode until a NEW, privately stored key is ready.
+# Groq OpenAI-compatible endpoint: https://console.groq.com/docs/openai
+# Model IDs and quotas must be checked using the private account before a real run.
+provider: "openai_compatible"
+base_url: "https://api.groq.com/openai/v1"
+api_key_env: "GROQ_API_KEY"
+models:
+  victim: "openai/gpt-oss-120b"
+  attacker: "openai/gpt-oss-20b"
+  translator: "FILL_IN"  # Set an accessible multilingual model ID after checking /models.
+limits:
+  max_requests_per_min: 5
+  max_tokens_per_min: 6000
+  max_total_requests: 20
+  max_total_usd: 0   # SAFETY LOCK: real requests disabled until explicitly configured.
+  max_usd_per_request: "FILL_IN"  # Need verified billing/free-tier policy before enabling.
+request:
+  temperature: 0.0
+  max_tokens: 256
+  timeout_s: 60
