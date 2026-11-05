@@ -11,15 +11,15 @@ A *scenario* is a fixed authorized user request, a fixed tool-output insertion p
 Compare four pre-registered conditions, all evaluated with the same scenario splits and tool privileges:
 - **C1 — static English:** fixed English attack candidates, not optimized against the target.
 - **C2 — static translated:** faithful translations of the same C1 candidates, reported **per language**; translations are checked for intent preservation and language quality.
-- **C3 — adaptive language/script/code-mix:** attacker can query a separate training oracle within a *fixed, logged* query budget and select language, script, and code-mixing. The final candidate is frozen before hidden held-out evaluation.
-- **C4 — adaptive control:** same model, budget, seeds, and selection algorithm as C3, with English-only candidates; estimates the benefit of multilingual search beyond generic adaptive optimization.
+- **C4 — adaptive language/script/code-mix:** attacker can query a separate training oracle within a *fixed, logged* query budget and select language, script, and code-mixing. The final candidate is frozen before hidden held-out evaluation.
+- **C3 — adaptive control:** same model, budget, seeds, and selection algorithm as C3, with English-only candidates; estimates the benefit of multilingual search beyond generic adaptive optimization.
 
 A no-injection benign baseline is also needed to measure task utility and false positive refusals.
 
 ## Causal and validity requirements
 1. Freeze an initial attack taxonomy, languages, seed scenarios, defender variants, model versions, decoding parameters, and maximum context/tool budget *before* held-out evaluation. Record protocol changes.
 2. Assign scenario IDs to disjoint development/tuning/test sets. A scenario **family**, including paraphrases and translations, must never cross splits.
-3. Equalize the total attacker query budget between C3 and C4; log attempted queries, duplicates, feedback, selected candidates, elapsed time, and failures. The attacker sees only permitted training feedback.
+3. Equalize the total attacker query budget between C4 and C3; log attempted queries, duplicates, feedback, selected candidates, elapsed time, and failures. The attacker sees only permitted training feedback.
 4. Avoid target-test leakage: selected attack prompts, defense settings, thresholds and stopping rules must be fixed before the held-out test run. Blind human adjudication on ambiguous agent traces.
 5. Preserve matched comparisons: same scenario, defense, model, tool-output location and seeds across conditions where possible. Report attack-success **counts and denominators**, plus Wilson 95% intervals; compare paired results with matched-case analyses rather than relying on independent intervals.
 6. Separately record invalid payloads, timeouts, tool failures, policy refusals, and unscorable trials; do not silently remove them from denominators. Measure clean-task completion and legitimate-user friction.
