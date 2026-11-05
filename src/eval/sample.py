@@ -30,7 +30,8 @@ def sample_pairs(suite=None, count=30, seed=20261105):
     selected=candidates[:count]
     if len(selected)<count:
         raise ValueError(f"requested {count} pairs but only {len(selected)} are available")
-    assign_family_splits(selected, seed)\n    return {"suite":suite.name,"seed":seed,"count":len(selected),"pairs":selected,
+    assign_family_splits(selected, seed)
+    return {"suite":suite.name,"seed":seed,"count":len(selected),"pairs":selected,
             "excluded_noninjectable_user_tasks":exclusions,
             "warning":"Selection is a seeded subset, not a random split across independent scenario families."}
 
