@@ -1,9 +1,7 @@
 name: groq-credential-preflight
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - research/multilingual-injection-2026
+  pull_request:
     paths:
       - .github/workflows/groq-preflight.yml
 
