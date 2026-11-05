@@ -14,4 +14,5 @@ def build_pipeline(client:Client, defense="none"):
     llm=OpenAILLM(BudgetedOpenAI(client),model,
                   temperature=client.request.get("temperature",0))
     return AgentPipeline.from_config(PipelineConfig(
-        llm=llm,defense=None if defense=="none" else defense))
+        llm=llm, defense=None if defense=="none" else defense,
+        model_id=None, system_message_name=None, system_message=None))
