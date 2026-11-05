@@ -1,9 +1,6 @@
 name: groq-credential-preflight
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - .github/workflows/groq-preflight.yml
 
 permissions:
   contents: read
