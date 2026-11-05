@@ -30,9 +30,26 @@ def sample_pairs(suite=None, count=30, seed=20261105):
     selected=candidates[:count]
     if len(selected)<count:
         raise ValueError(f"requested {count} pairs but only {len(selected)} are available")
-    return {"suite":suite.name,"seed":seed,"count":len(selected),"pairs":selected,
+    assign_family_splits(selected, seed)\n    return {"suite":suite.name,"seed":seed,"count":len(selected),"pairs":selected,
             "excluded_noninjectable_user_tasks":exclusions,
             "warning":"Selection is a seeded subset, not a random split across independent scenario families."}
+
+def assign_family_splits(pairs, seed):
+    """Keep all tasks from the same user-task family in one split."""
+    families=sorted({p["user_task_id"] for p in pairs})
+    random.Random(seed+1).shuffle(families)
+    n=len(families)
+    n_dev=max(1, round(n*.4)) if n else 0
+    n_tune=max(1, round(n*.3)) if n>=3 else 0
+    if n_dev+n_tune >= n and n>=3:
+        n_dev=max(1,n-n_tune-1)
+    labels={}
+    for index,family in enumerate(families):
+        labels[family]="dev" if index<n_dev else ("tune" if index<n_dev+n_tune else "test")
+    for pair in pairs:
+        pair["split"]=labels[pair["user_task_id"]]
+    return labels
+
 
 def write_manifest(path,manifest):
     output=Path(path)
