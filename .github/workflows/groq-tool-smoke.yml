@@ -46,9 +46,10 @@ jobs:
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           PYTHONPATH: sdk
+          MODEL: ${{ inputs.model }}
         run: |
           python scripts/groq_tool_smoke.py --mode live \
-            --model "${{ inputs.model || 'openai/gpt-oss-120b' }}" \
+            --model "${MODEL:-openai/gpt-oss-120b}" \
             --output data/runs/groq-tool-live.json \
             --i-understand-this-makes-real-calls
       - name: Upload redacted execution summaries
