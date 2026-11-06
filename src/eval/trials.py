@@ -19,11 +19,10 @@ def run_english_static_pair(suite, pipeline, pair, *, attack=None,
                             victim_model_id, attacker_model_id,
                             translator_model_id, seed, defense_id,
                             api_parameters, suite_version="v1.2.2"):
-    require_agentdojo()
-    from agentdojo.attacks.baseline_attacks import DirectAttack
-
     if pair.get("split") not in ("dev", "tune", "test"):
         raise ValueError("manifest pair must have a frozen scenario-family split")
+    require_agentdojo()
+    from agentdojo.attacks.baseline_attacks import DirectAttack
     if attack is None:
         attack = DirectAttack(suite, pipeline)
     user = suite.get_user_task_by_id(pair["user_task_id"])
