@@ -84,3 +84,24 @@ def test_only_requested_split_included():
             record("C4", trial="b", split="dev")]
     result = paired_report(rows, split="test", samples=100)
     assert result["matched_attempted"] == 0
+
+
+def test_same_user_task_family_cannot_cross_splits():
+    rows = [record("C3", trial="a", scenario="task_7::attack_1::slot",
+                   split="dev"),
+            record("C4", trial="b", scenario="task_7::attack_2::slot",
+                   split="test")]
+    with pytest.raises(ValueError, match="leakage"):
+        paired_report(rows, samples=100)
+
+
+def test_cluster_count_is_user_task_family_not_unique_injection_slot():
+    rows = [
+        record("C3", trial="a", scenario="task_7::attack_1::slot", success=False),
+        record("C4", trial="b", scenario="task_7::attack_1::slot", success=True),
+        record("C3", trial="c", scenario="task_7::attack_2::slot", success=True),
+        record("C4", trial="d", scenario="task_7::attack_2::slot", success=True),
+    ]
+    result = paired_report(rows, samples=100)
+    assert result["paired_scored"] == 2
+    assert result["paired_scored_only_bootstrap"]["n_families"] == 1
