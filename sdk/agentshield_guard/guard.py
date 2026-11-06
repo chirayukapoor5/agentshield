@@ -152,7 +152,14 @@ class AgentShield:
         """Create an authorized wrapper. Register the wrapper as the agent tool."""
         @functools.wraps(fn)
         def wrapped(**arguments: Any) -> Any:
-            decision = self.decide(name, arguments)
+            # Execute precisely the JSON argument snapshot that was checked.
+            # Without this boundary, an approval callback could mutate a
+            # nested input object after approval but before handler execution.
+            try:
+                execution_args = json.loads(json.dumps(arguments, allow_nan=False))
+            except (TypeError, ValueError, RecursionError) as exc:
+                raise DeniedToolCall("invalid_tool_arguments") from exc
+            decision = self.decide(name, execution_args)
             if self.audit is not None:
                 try:
                     self.audit(decision)
@@ -160,7 +167,7 @@ class AgentShield:
                     raise DeniedToolCall("audit_failed") from exc
             if not decision.allowed:
                 raise DeniedToolCall(f"{decision.tool}: {decision.reason}")
-            return fn(**arguments)
+            return fn(**execution_args)
         return wrapped
 
     def wrap_registry(self, tools: Mapping[str, Callable[..., Any]]) -> dict[str, Callable[..., Any]]:
