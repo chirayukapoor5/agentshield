@@ -91,9 +91,27 @@ evidence the command has been executed.
 ratios, query caps, scenario-bound resumptions, and hashes candidate texts
 instead of writing raw attack/defender content. On oracle failures it logs an
 unscorable consumed attempt and stops for manual review. The code accepts
-proposer and evaluator callbacks; **the officially scored C3/C4 model-search
-CLI is not yet integrated**. The existing `scripts/run_adaptive.py` explicitly
-exits without benchmark scores on real mode.
+proposer and evaluator callbacks. The `scripts/run_adaptive.py` pilot now
+connects a budgeted attacker-model proposer to the pinned official AgentDojo
+security checker on one dev/tune scenario. It intentionally excludes held-out
+cases and does not report a final benchmark ASR.
+
+```bash
+# No API calls:
+PYTHONPATH=. python scripts/run_adaptive.py --mock --budget 3
+
+# Controlled real-model dev/tune pilot, after reviewing provider caps and
+# selecting an exact scenario ID from the frozen manifest:
+PYTHONPATH=. python scripts/run_adaptive.py \\
+  --condition C3 --budget 3 \\
+  --scenario-id 'user_task_id::injection_task_id::injection_slot' \\
+  --i-understand-this-makes-real-calls
+```
+
+C4 refuses to run until `config/languages.yaml` contains a genuinely reviewed
+non-English language with `native_validation_available: true`. Existing
+language placeholders must not be represented as reviewed. Pilot feedback is
+training-only; frozen candidates and blinded held-out replay are not yet done.
 
 For the preregistered comparison, use the same attacker budget (B=10) and
 selection algorithm for C3 and C4; keep held-out feedback unavailable during
