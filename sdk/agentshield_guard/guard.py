@@ -10,6 +10,7 @@ import ipaddress
 import json
 import re
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Any, Callable, Mapping
 from urllib.parse import urlsplit
 
@@ -42,16 +43,37 @@ class ToolPolicy:
     url_args: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        # Frozen dataclasses do not freeze the objects stored in their fields.
+        # Take validated, immutable snapshots so callers cannot remove URL checks
+        # after policy construction by mutating an input set or dictionary.
+        for field_name in ("read_only_tools", "approval_tools", "allowed_hosts"):
+            raw = getattr(self, field_name)
+            if not isinstance(raw, (set, frozenset, tuple, list)):
+                raise TypeError(f"{field_name} must be a collection of strings")
+            if any(not isinstance(value, str) or not value for value in raw):
+                raise ValueError(f"{field_name} must contain nonempty strings")
+            object.__setattr__(self, field_name, frozenset(raw))
+
         if self.read_only_tools & self.approval_tools:
             raise ValueError("tools cannot be simultaneously read-only and approval-required")
         for host in self.allowed_hosts:
             if not _valid_dns_name(host):
                 raise ValueError("allowed_hosts must be normalized DNS hostnames")
-        for tool, names in self.url_args.items():
-            if tool not in (self.read_only_tools | self.approval_tools):
+
+        if not isinstance(self.url_args, Mapping):
+            raise TypeError("url_args must map tool names to URL argument names")
+        checked_url_args: dict[str, tuple[str, ...]] = {}
+        for tool, raw_names in self.url_args.items():
+            if not isinstance(tool, str) or tool not in (self.read_only_tools | self.approval_tools):
                 raise ValueError(f"URL-bearing tool {tool!r} must be explicitly authorized")
-            if not names or any(not isinstance(s, str) or not s.isidentifier() for s in names):
-                raise ValueError("url_args values must be nonempty argument-name tuples")
+            if not isinstance(raw_names, (list, tuple)):
+                raise ValueError("url_args values must be nonempty argument-name sequences")
+            names = tuple(raw_names)
+            if (not names or any(not isinstance(s, str) or not s.isidentifier() for s in names)
+                    or len(names) != len(set(names))):
+                raise ValueError("url_args values must be nonempty, unique argument names")
+            checked_url_args[tool] = names
+        object.__setattr__(self, "url_args", MappingProxyType(checked_url_args))
 
 
 def _valid_dns_name(host: str) -> bool:
