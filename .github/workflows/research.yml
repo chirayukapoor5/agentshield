@@ -17,7 +17,7 @@ jobs:
       - name: Run offline research tests
         env:
           PYTHONPATH: .
-        run: python -m pytest -q tests research/test_validate_results.py research/test_paired_analysis.py
+        run: python -m pytest -q tests research/test_validate_results.py research/test_paired_analysis.py research/test_audit_traces.py
       - name: Smoke test zero-API dry run
         env:
           PYTHONPATH: .
