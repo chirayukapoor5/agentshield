@@ -15,6 +15,8 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--mock", action="store_true")
     p.add_argument("--condition", choices=["C1"], default="C1")
+    p.add_argument("--split", choices=["dev", "tune", "test"], default="dev")
+    p.add_argument("--permit-heldout-test", action="store_true")
     p.add_argument("--defense", choices=["none","tool_filter","repeat_user_prompt"],
                    default="none")
     p.add_argument("--pairs-manifest", default="data/runs/workspace-pairs.json")
@@ -39,6 +41,8 @@ def main():
             "victim",[{"role":"user","content":"mock-only dry run"}])
         print("MOCK DIAGNOSTIC; NO BENCHMARK ASR:",response["id"])
         return
+    if args.split == "test" and not args.permit_heldout_test:
+        raise SystemExit("Held-out test is locked; use --permit-heldout-test only after model, prompts and settings are frozen")
     if lower > 200 and not args.approve_over_200:
         raise SystemExit("Approval required: --approve-over-200")
     verify_defenses()
@@ -54,6 +58,8 @@ def main():
     from agentdojo.attacks.baseline_attacks import DirectAttack
     attack=DirectAttack(suite,pipeline)
     for pair in manifest["pairs"]:
+        if pair.get("split") != args.split:
+            continue
         record=run_english_static_pair(suite,pipeline,pair,attack=attack,
                    victim_model_id=client.models["victim"],
                    attacker_model_id=client.models["attacker"],
@@ -61,7 +67,7 @@ def main():
                    seed=exp["sample_seed"],defense_id=args.defense,
                    api_parameters=config["request"])
         completed+=int(append_trial(args.output,record))
-    print(json.dumps({"new_trials":completed,"output":args.output,
+    print(json.dumps({"new_trials":completed,"split":args.split,"output":args.output,
                       "ledger":client.usage(),"status":"official_checker_records_not_independently_audited"},indent=2))
 
 if __name__=="__main__":
