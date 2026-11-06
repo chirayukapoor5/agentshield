@@ -66,7 +66,7 @@ agent turns. Its bounded inputs do not bound handler execution time or output.
 The `run_tool_agent` API now completes multiple chat-completion turns and
 routes **every** local function call through `dispatch_chat_tool_calls`.
 The `GroqChatTransport` uses the fixed Groq chat-completions HTTPS endpoint,
-no extra runtime dependencies, a request timeout and a response-size cap.
+no extra runtime dependencies, a request timeout, a response-size cap, and refusal of HTTP redirects.
 This is separate from, and does not replace, the original research
 `src.llm.Client` quota ledger. Treat each use of the live SDK transport as
 **independently chargeable** by the provider.
