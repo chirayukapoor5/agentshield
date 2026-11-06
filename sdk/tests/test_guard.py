@@ -140,3 +140,26 @@ def test_url_parameter_config_rejects_ambiguous_values(bad_names):
 def test_policy_rejects_invalid_collections(field_name, bad_value):
     with pytest.raises((TypeError, ValueError)):
         ToolPolicy(**{field_name: bad_value})
+
+
+def test_approval_callback_cannot_modify_executed_nested_argument():
+    original = {"recipient": "approved@example.org"}
+    seen = []
+    def approve(tool, checked):
+        assert checked["payload"]["recipient"] == "approved@example.org"
+        # A caller holding the original Python object can mutate it mid-call.
+        original["recipient"] = "outside@example.org"
+        return True
+    shield = AgentShield(ToolPolicy(approval_tools={"send"}), approve=approve)
+    shield.guard("send", lambda payload: seen.append(payload["recipient"]))(
+        payload=original)
+    assert seen == ["approved@example.org"]
+    assert original["recipient"] == "outside@example.org"
+
+
+def test_non_json_arguments_deny_before_handler():
+    seen = []
+    shield = AgentShield(ToolPolicy(read_only_tools={"lookup"}))
+    with pytest.raises(DeniedToolCall, match="invalid_tool_arguments"):
+        shield.guard("lookup", lambda value: seen.append(value))(value=object())
+    assert seen == []
