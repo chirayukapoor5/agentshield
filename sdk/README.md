@@ -34,6 +34,30 @@ do not mutate an existing instance. The application remains responsible for
 registering only wrapped tools and for enforcing redirect/DNS safety at the
 network layer.
 
+## OpenAI-compatible tool-call integration (offline)
+
+`dispatch_chat_tool_calls(shield, handlers, tool_calls)` accepts the standard
+chat-completions `tool_calls` envelope (list of plain dictionaries). It
+**internally wraps** the supplied raw Python handlers, validates each tool-call
+ID and strict JSON argument object before executing any call, and returns
+`role='tool'` messages to append to the model conversation. It supports
+approval callbacks and fail-closed auditing through `AgentShield`.
+
+```bash
+PYTHONPATH=sdk python sdk/examples/chat_tool_calls.py
+python -m pytest sdk/tests -q
+```
+
+For model SDK objects, convert each call with `call.model_dump()` first.
+An invalid batch raises `MalformedToolCalls` before any handler runs; callers
+must stop the turn rather than passing the unvalidated calls to other code.
+Unknown or unauthorized functions return a structured refusal to the model.
+This adapter handles *chat-completions tool-call records only*; it does not
+perform provider API calls, vet model output text, isolate Python handlers,
+prevent a handler's secondary network access, or establish an attack-success
+rate. Tool results are untrusted content and should remain so on subsequent
+agent turns. Its bounded inputs do not bound handler execution time or output.
+
 ## Evidence and limitations
 
 `demo_stats.py` runs eight deterministic, synthetic policy decisions and prints exact counts. It does not exercise real LLM agents, adaptive attacks, AgentDojo, SaaS policy sync, prompt-injection classifier robustness, or any production deployment. Security tests check fail-closed *wrapper behavior*, not end-to-end agent safety.
