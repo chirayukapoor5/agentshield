@@ -16,7 +16,9 @@ a claim that the research protocol or a production agent-security product is com
 | Tool-call canary | Scripted mock passed in CI | Controlled note content and simulated email, no outbound-email capability, no real-model ASR |
 | Real Groq tool-call smoke | Manual workflow available | At most three model requests, provider credential secret, redacted report; do not call verified until a run and artifact are inspected |
 | AgentDojo static result schema | Implemented, offline-tested | C1 official checker output mapped to research JSONL validator; paired redacted metadata traces; held-out split must be explicitly unlocked |
-| AgentDojo multilingual comparison | Not completed | C2 validated translations, C3/C4 officially scored adaptive attacks, language coverage, classifier threshold and held-out reporting remain |
+| C2 translated official checks | Implemented, input-gated | Requires reviewed translation records, exact English source hashes and dev-split gate; no validated corpus available yet |
+| C3/C4 adaptive pilot | Implemented, not run with real model | Budgeted attacker-model proposal and official dev/tune-only checker oracle; no held-out ASR result |
+| Multilingual comparison | Not completed | Reviewed translations, frozen C3/C4 candidates, classifier coverage, matched held-out evaluations and uncertainty analysis remain |
 | Demo dashboard | Static/synthetic | Policy playback and links to CI; not real-time production telemetry |
 | Production policy enforcement | Not completed | DNS/redirect safety, direct unwrapped calls, sandbox/egress isolation, approval UX, signed distributed policies |
 
@@ -48,6 +50,21 @@ Alternatively run `.github/workflows/groq-tool-smoke.yml` via GitHub
 Actions → `groq-local-tool-smoke` → Run workflow. Inspect the JSON artifact.
 Provider errors or unscorable episodes must **not** be counted as successful
 security defenses. All example actions and email addresses are synthetic.
+
+## Additional reproducibility gates
+
+`research/paired_analysis.py` now refuses comparison-cell duplicates and
+scenario-family split leakage, accounts for missing/unscorable C3/C4
+observations, computes sensitivity bounds, and clusters bootstrap resamples
+by the user-task identifier in the scenario ID.
+
+`research/audit_traces.py` rejects missing or inconsistent scored-trial
+metadata traces. An empty audit is explicitly *not* verified evidence.
+
+`src/attack/search.py` binds resume logs to each experiment and records
+candidate hashes and categorical checker feedback only; it never writes raw
+defender output. Provider requests continue to require the persistent budget
+ledger. CI tests for these rules are offline fixtures.
 
 ## Research completion gates
 
