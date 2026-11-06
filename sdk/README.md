@@ -20,6 +20,20 @@ secured_tools = shield.wrap_registry({'search': my_search_function})
 
 Unlisted calls are denied. State-changing actions need an explicit approval callback. For URL-bearing tools, declare every URL argument and an exact HTTPS hostname allowlist. DNS and redirects still require network-layer enforcement; matching a hostname does not prevent DNS rebinding or hidden redirects. Never treat tool-output text as authoritative instructions.
 
+
+## Policy configuration integrity
+
+`ToolPolicy` snapshots its allowlists and URL-argument declarations at construction.
+Changing the original mutable sets, lists or dictionaries after initialization cannot
+relax authorization checks. The stored URL-argument mapping is read-only, and
+malformed or duplicate argument declarations are rejected. These are local
+configuration-integrity guarantees, **not** complete URL egress enforcement.
+
+Construct a separate `ToolPolicy` and `AgentShield` instance to change policy;
+do not mutate an existing instance. The application remains responsible for
+registering only wrapped tools and for enforcing redirect/DNS safety at the
+network layer.
+
 ## Evidence and limitations
 
 `demo_stats.py` runs eight deterministic, synthetic policy decisions and prints exact counts. It does not exercise real LLM agents, adaptive attacks, AgentDojo, SaaS policy sync, prompt-injection classifier robustness, or any production deployment. Security tests check fail-closed *wrapper behavior*, not end-to-end agent safety.
