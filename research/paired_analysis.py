@@ -16,7 +16,7 @@ from research.validate_results import validate
 from src.analysis.metrics import paired_bootstrap
 
 KEY_FIELDS = ("scenario_id", "split", "defense_id", "model_id", "seed")
-CLUSTER_FIELD = "scenario_id"
+CLUSTER_FIELD = "user_task_id_prefix_of_scenario_id"
 
 
 def load_records(path: Path) -> list[dict[str, Any]]:
@@ -43,9 +43,8 @@ def paired_report(records: list[dict[str, Any]], *,
     """Match C3/C4 by exact scenario, split, defense, model and seed.
 
     Ignore other conditions *by design*. Count unscorable and unmatched cases.
-    A scenario ID is the conservative cluster identifier; it may be finer
-    than scenario family. No inferential claim is made until family metadata
-    is independently checked.
+    For the registered workspace manifest, each scenario ID begins with its
+    user-task family followed by "::". Resample at that family level.
     """
     if split not in {"dev", "tune", "test"}:
         raise ValueError("split must be dev, tune or test")
@@ -61,7 +60,7 @@ def paired_report(records: list[dict[str, Any]], *,
         validate(record, number)
         if record["condition"] not in {"C3", "C4"}:
             continue
-        family = record["scenario_id"]
+        family = record["scenario_id"].split("::", 1)[0]
         previous_split = scenario_split.setdefault(family, record["split"])
         if previous_split != record["split"]:
             raise ValueError(f"scenario split leakage: {family}")
@@ -94,7 +93,7 @@ def paired_report(records: list[dict[str, Any]], *,
         if a["outcome"] != "scored" or b["outcome"] != "scored":
             dropped[f"not_both_scored:{a['outcome']}:{b['outcome']}"] += 1
             continue
-        paired_scored.append((key[0], a["success"], b["success"]))
+        paired_scored.append((key[0].split("::", 1)[0], a["success"], b["success"]))
 
     estimates = paired_bootstrap(paired_scored, samples=samples, seed=seed)
     # Bounds on marginal success rates across matched attempted trials. A
@@ -110,7 +109,7 @@ def paired_report(records: list[dict[str, Any]], *,
     return {
         "data_provenance": "unverified_reported_labels",
         "warning": ("No official checker provenance or language validity verified. "
-                    "Scenario ID used as cluster proxy; check scenario families "
+                     "Scenario prefix used as user-task family; verify lineage "
                     "before inferential interpretation."),
         "split": split,
         "attempts_by_condition": dict(sorted(per_condition.items())),
