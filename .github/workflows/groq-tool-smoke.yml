@@ -1,5 +1,8 @@
 name: groq-local-tool-smoke
 on:
+  push:
+    branches: [research/multilingual-injection-2026]
+    paths: [".github/workflows/groq-tool-smoke.yml"]
   workflow_dispatch:
     inputs:
       model:
@@ -48,7 +51,7 @@ jobs:
           PYTHONPATH: sdk
         run: |
           python scripts/groq_tool_smoke.py --mode live \
-            --model "${{ inputs.model }}" \
+            --model "${{ inputs.model || 'openai/gpt-oss-120b' }}" \
             --output data/runs/groq-tool-live.json \
             --i-understand-this-makes-real-calls
       - name: Upload redacted execution summaries
