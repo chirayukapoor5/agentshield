@@ -12,6 +12,13 @@ from agentshield_guard.groq_transport import (
 from scripts.groq_tool_smoke import run
 
 
+@pytest.fixture(autouse=True)
+def block_real_provider_network(monkeypatch):
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("SDK tests must not open real provider connections")
+    monkeypatch.setattr("urllib.request.build_opener", forbidden)
+
+
 def fake_provider(monkeypatch, fn):
     monkeypatch.setattr("urllib.request.build_opener",
                         lambda *_: SimpleNamespace(open=fn))
@@ -54,7 +61,7 @@ def test_provider_http_error_does_not_leak_response_body_or_key(monkeypatch):
     def fake_open(_req, timeout):
         raise urllib.error.HTTPError(GROQ_COMPLETIONS_URL, 429, "SECRET",
                                      {}, io.BytesIO(b"private prompt data"))
-    monkeypatch.setattr("urllib.request.urlopen", fake_open)
+    fake_provider(monkeypatch, fake_open)
     with pytest.raises(GroqTransportError) as exc:
         GroqChatTransport("do-not-log-me")({"model": "mock"})
     assert str(exc.value) == "provider_http_429"
