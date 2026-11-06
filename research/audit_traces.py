@@ -64,7 +64,8 @@ def audit_traces(results: Path) -> dict:
         verified += 1
         group["trace_verified"] += 1
     return {
-        "status": "trace_structures_valid" if not failures else "trace_audit_failed",
+        "status": ("no_trials" if not records else
+                   "trace_structures_valid" if not failures else "trace_audit_failed"),
         "rows": len(records), "scored": sum(v["scored"] for v in by_condition.values()),
         "verified_scored_traces": verified, "by_condition": by_condition,
         "failures": failures,
