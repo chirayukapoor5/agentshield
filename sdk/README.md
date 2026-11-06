@@ -58,6 +58,45 @@ prevent a handler's secondary network access, or establish an attack-success
 rate. Tool results are untrusted content and should remain so on subsequent
 agent turns. Its bounded inputs do not bound handler execution time or output.
 
+## Bounded live tool-use loop (Groq)
+
+The `run_tool_agent` API now completes multiple chat-completion turns and
+routes **every** local function call through `dispatch_chat_tool_calls`.
+The `GroqChatTransport` uses the fixed Groq chat-completions HTTPS endpoint,
+no extra runtime dependencies, a request timeout and a response-size cap.
+This is separate from, and does not replace, the original research
+`src.llm.Client` quota ledger. Treat each use of the live SDK transport as
+**independently chargeable** by the provider.
+
+An offline, deterministic full-loop canary demonstration:
+
+```bash
+PYTHONPATH=sdk python scripts/groq_tool_smoke.py --mode mock
+python -m pytest -q sdk/tests
+```
+
+One explicitly opted-in model run (maximum three Groq chat requests):
+
+```bash
+export GROQ_API_KEY="your-private-key"
+PYTHONPATH=sdk python scripts/groq_tool_smoke.py --mode live \\
+  --i-understand-this-makes-real-calls
+```
+
+The live tool-smoke GitHub Actions workflow is intentionally **manual-only**:
+Actions → `groq-local-tool-smoke` → Run workflow. A repository
+`GROQ_API_KEY` secret is required. It emits a bounded, redacted JSON artifact,
+including tool names and whether calls were allowed or refused. Never commit
+the actual credential. The synthetic `send_email` handler has **no** email
+or network capability, even if accidentally permitted.
+
+The model may answer without invoking tools, and a single smoke run cannot
+establish attack success rates. The scripted offline sequence is not evidence
+that a real model followed the malicious text. Tool outputs remain untrusted;
+a caller must not interpret them as system instructions. By design, this SDK
+does not sandbox handlers or prevent a registered handler from making arbitrary
+network requests. Do not hand it real secrets in the sample.
+
 ## Evidence and limitations
 
 `demo_stats.py` runs eight deterministic, synthetic policy decisions and prints exact counts. It does not exercise real LLM agents, adaptive attacks, AgentDojo, SaaS policy sync, prompt-injection classifier robustness, or any production deployment. Security tests check fail-closed *wrapper behavior*, not end-to-end agent safety.
