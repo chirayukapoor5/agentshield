@@ -17,6 +17,12 @@ class GroqTransportError(RuntimeError):
     """Redacted provider failure; never includes credentials or raw content."""
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # Never forward bearer credentials or synthetic prompts to another host.
+        return None
+
+
 class GroqChatTransport:
     def __init__(self, api_key: str, *, timeout: float = 30.0,
                  max_response_bytes: int = 2_000_000):
@@ -27,6 +33,7 @@ class GroqChatTransport:
         if type(max_response_bytes) is not int or not 1024 <= max_response_bytes <= 8_000_000:
             raise ValueError("invalid provider response limit")
         self._key = api_key
+        self._opener = urllib.request.build_opener(_NoRedirect())
         self.timeout = timeout
         self.max_response_bytes = max_response_bytes
 
@@ -42,7 +49,7 @@ class GroqChatTransport:
                 headers={"Authorization": "Bearer " + self._key,
                          "Content-Type": "application/json",
                          "User-Agent": "AgentShield-ToolResearch/0.1"})
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+            with self._opener.open(request, timeout=self.timeout) as response:
                 body = response.read(self.max_response_bytes + 1)
                 if len(body) > self.max_response_bytes:
                     raise GroqTransportError("provider_response_oversized")
