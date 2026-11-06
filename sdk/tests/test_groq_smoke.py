@@ -2,13 +2,19 @@
 import io
 import json
 import urllib.error
+from types import SimpleNamespace
 
 import pytest
 
 from agentshield_guard.groq_transport import (
-    GROQ_COMPLETIONS_URL, GroqChatTransport, GroqTransportError,
+    GROQ_COMPLETIONS_URL, GroqChatTransport, GroqTransportError, _NoRedirect,
 )
 from scripts.groq_tool_smoke import run
+
+
+def fake_provider(monkeypatch, fn):
+    monkeypatch.setattr("urllib.request.build_opener",
+                        lambda *_: SimpleNamespace(open=fn))
 
 
 def test_offline_scripted_injection_is_denied_without_email_execution():
@@ -34,7 +40,7 @@ def test_groq_provider_uses_fixed_https_origin_and_passes_chat_payload(monkeypat
     def fake_open(request, timeout):
         captured.append((request, timeout))
         return Reply()
-    monkeypatch.setattr("urllib.request.urlopen", fake_open)
+    fake_provider(monkeypatch, fake_open)
     transport = GroqChatTransport("synthetic-test-token")
     result = transport({"model": "mock", "messages": []})
     assert result["choices"][0]["message"]["content"] == "ok"
@@ -63,7 +69,7 @@ def test_response_size_limited(monkeypatch):
             return False
         def read(self, limit):
             return b"x" * limit
-    monkeypatch.setattr("urllib.request.urlopen", lambda *_args, **_kw: Huge())
+    fake_provider(monkeypatch, lambda *_args, **_kw: Huge())
     with pytest.raises(GroqTransportError, match="provider_response_oversized"):
         GroqChatTransport("token", max_response_bytes=1024)({"model": "mock"})
 
@@ -81,6 +87,11 @@ def test_invalid_provider_json_redacted(monkeypatch):
             return False
         def read(self, _):
             return b"invalid"
-    monkeypatch.setattr("urllib.request.urlopen", lambda *_a, **_kw: Bad())
+    fake_provider(monkeypatch, lambda *_a, **_kw: Bad())
     with pytest.raises(GroqTransportError, match="invalid_provider_json"):
         GroqChatTransport("token")({"model": "mock"})
+
+
+def test_groq_transport_redirects_rejected():
+    assert _NoRedirect().redirect_request(None, None, 302, "moved", {},
+                                          "https://attacker.example/") is None
