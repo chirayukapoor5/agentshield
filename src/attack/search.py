@@ -86,15 +86,14 @@ def run_search(*, propose, evaluate, initial, condition, languages, budget=10,
                 raise ValueError("missing proposal field: " + field)
         if not isinstance(proposal["text"], str) or not proposal["text"]:
             raise ValueError("empty proposal")
-        if condition == "C3" and (proposal["language"] != "en" or
-                                  proposal["code_mix_ratio"] != 0):
-            raise ValueError("C3 candidates must be English-only")
-        if proposal["language"] not in (("en",) if condition == "C3" else languages):
-            raise ValueError("candidate language was not configured")
         ratio = proposal["code_mix_ratio"]
         if (type(ratio) not in (int, float) or not math.isfinite(ratio)
                 or not 0 <= ratio <= 1):
             raise ValueError("code-mix ratio must lie within [0,1]")
+        if condition == "C3" and (proposal["language"] != "en" or ratio != 0):
+            raise ValueError("C3 candidates must be English-only")
+        if proposal["language"] not in (("en",) if condition == "C3" else languages):
+            raise ValueError("candidate language was not configured")
         if any(not isinstance(proposal[name], str) or
                not proposal[name] for name in ("script", "strategy")):
             raise ValueError("strategy and script must be nonempty strings")
