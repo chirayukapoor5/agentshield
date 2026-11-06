@@ -25,7 +25,10 @@ Unlisted calls are denied. State-changing actions need an explicit approval call
 
 `ToolPolicy` snapshots its allowlists and URL-argument declarations at construction.
 Changing the original mutable sets, lists or dictionaries after initialization cannot
-relax authorization checks. The stored URL-argument mapping is read-only, and
+relax authorization checks. Guarded calls now require JSON-compatible argument
+values and execute the deep-copied JSON snapshot that was policy-checked;
+a callback cannot mutate the originally supplied nested arguments to change
+the values executed after approval. The stored URL-argument mapping is read-only, and
 malformed or duplicate argument declarations are rejected. These are local
 configuration-integrity guarantees, **not** complete URL egress enforcement.
 
