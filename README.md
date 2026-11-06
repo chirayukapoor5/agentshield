@@ -16,13 +16,13 @@ python sdk/examples/demo_stats.py
 
 Source: [sdk/](sdk/) · [documentation](sdk/README.md) · [reproduced local demo](docs/SDK_DEMO_RESULTS.md).
 
-**Current limitation:** The application must register the SDK's wrapped functions for enforcement; this is not an automatic universal agent firewall. Synthetic policy decisions are **not** AgentDojo ASR or real-world prompt-injection efficacy. External API access, signed policies, proxy interception and framework integrations are not implemented by this SDK.
+**Current limitation:** The application must register the SDK's wrapped functions for enforcement; this is not an automatic universal agent firewall. Synthetic policy decisions are **not** AgentDojo ASR or real-world prompt-injection efficacy. The SDK now has a bounded optional Groq transport and an OpenAI-compatible local function-call dispatcher. Signed policies, proxy interception, automatic framework interception and independent production security certification are not implemented.
 
 ---
 
 ## Research track: multilingual adaptive prompt injection (November 2026)
 
-The original AgentShield SaaS remains a **website-scanning prototype**. A separate, experimental research package lives in [research/README.md](research/README.md). Its analysis plan is in [docs/ANALYSIS_PLAN.md](docs/ANALYSIS_PLAN.md). No real AgentDojo attack evaluations have been run, and no ASR or task-utility results are claimed.
+The original AgentShield SaaS remains a **website-scanning prototype**. A separate, experimental research package lives in [research/README.md](research/README.md). Its analysis plan is in [docs/ANALYSIS_PLAN.md](docs/ANALYSIS_PLAN.md). No full AgentDojo attack evaluations or per-language ASR comparisons have been published, and no measured attack-success rates or task-utility results are claimed. The bounded Groq tool-use smoke is separate from AgentDojo benchmarking.
 
 The research comparisons are C1 static English, C2 static translated, C3 adaptive English-only, and C4 adaptive multilingual/script/code-mix, using a single pinned AgentDojo suite and official checkers. The repository defaults to a zero-network mock client.
 
