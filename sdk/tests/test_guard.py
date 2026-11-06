@@ -95,3 +95,48 @@ def test_wrap_registry_rejects_noncallables():
     shield=AgentShield(ToolPolicy())
     with pytest.raises(TypeError):
         shield.wrap_registry({"bad": "not callable"})
+
+
+def test_policy_snapshots_mutable_inputs():
+    tools = {"fetch"}
+    hosts = {"docs.example.org"}
+    names = ["url"]
+    declared = {"fetch": names}
+    policy = ToolPolicy(read_only_tools=tools, allowed_hosts=hosts, url_args=declared)
+    shield = AgentShield(policy)
+    tools.add("delete")
+    hosts.add("evil.test")
+    names.clear()
+    declared.clear()
+    assert not shield.decide("delete").allowed
+    assert not shield.decide("fetch", {"url": "https://evil.test/"}).allowed
+    assert not shield.decide("fetch", {}).allowed
+    assert shield.decide("fetch", {"url": "https://docs.example.org/"}).allowed
+
+
+def test_policy_url_mapping_is_immutable():
+    policy = ToolPolicy(read_only_tools=frozenset({"fetch"}),
+                        allowed_hosts=frozenset({"docs.example.org"}),
+                        url_args={"fetch": ("url",)})
+    with pytest.raises(TypeError):
+        policy.url_args["fetch"] = ()
+    with pytest.raises((AttributeError, TypeError)):
+        policy.read_only_tools.add("delete")
+
+
+@pytest.mark.parametrize("bad_names", [
+    (), [], ["url", "url"], ["url", 5], "url", {"url"}, ["not-a-name"],
+])
+def test_url_parameter_config_rejects_ambiguous_values(bad_names):
+    with pytest.raises(ValueError):
+        ToolPolicy(read_only_tools=frozenset({"fetch"}),
+                   url_args={"fetch": bad_names})
+
+
+@pytest.mark.parametrize("field_name,bad_value", [
+    ("read_only_tools", "fetch"), ("approval_tools", None),
+    ("allowed_hosts", {"docs.example.org": True}),
+])
+def test_policy_rejects_invalid_collections(field_name, bad_value):
+    with pytest.raises((TypeError, ValueError)):
+        ToolPolicy(**{field_name: bad_value})
