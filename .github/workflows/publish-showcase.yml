@@ -9,6 +9,11 @@ on:
       - scripts/verify_public_demo.py
       - .github/workflows/publish-showcase.yml
   workflow_dispatch:
+  pull_request:
+    paths:
+      - public-demo/**
+      - scripts/verify_public_demo.py
+      - .github/workflows/publish-showcase.yml
 
 permissions:
   contents: read
@@ -48,6 +53,7 @@ jobs:
           path: public-demo
 
   deploy:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: build
