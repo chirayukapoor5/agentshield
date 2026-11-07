@@ -3,9 +3,9 @@
 
 ## Reproducible CI evidence
 
-- [Successful 10k CI run #42371225324](https://github.com/chirayukapoor5/agentshield/actions/runs/42371225324)
-- [Python 3.10 report artifact](https://github.com/chirayukapoor5/agentshield/actions/runs/42371225324/artifacts/13573449496)
-- [Python 3.12 report artifact](https://github.com/chirayukapoor5/agentshield/actions/runs/42371225324/artifacts/13573518836)
+- [Successful 10k CI run #42371796465](https://github.com/chirayukapoor5/agentshield/actions/runs/42371796465)
+- [Python 3.10 report artifact](https://github.com/chirayukapoor5/agentshield/actions/runs/42371796465/artifacts/13574041633)
+- [Python 3.12 report artifact](https://github.com/chirayukapoor5/agentshield/actions/runs/42371796465/artifacts/13574685106)
 - The same source and seeded cases ran on both Python versions.
 - Each environment ran **10,000/10,000 passing deterministic contract cases**,
   with **0 observed failures** and **0 real model or external network calls**.
@@ -50,7 +50,7 @@ dispatcher now:
    batch.
 3. Iteratively rejects unpaired surrogates after JSON decoding, including
    nested arguments, names and tool-call IDs.
-4. Validates all calls before invoking the first handler.
+4. Rejects the same malformed Unicode values in direct `AgentShield.guard` handler calls, not only chat-completion dispatch.\n5. Validates all calls before invoking the first handler.
 
 Six additional explicit SDK regression cases target this class of malformed
 data; both Python SDK CI configurations passed.
