@@ -29,6 +29,17 @@
     #sandbox-output{color:#cdebe0;font-size:12px;min-height:20px;margin:12px 0}
     #audit{font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere;background:#07151d;padding:12px;border-radius:8px;max-height:160px;overflow:auto}
     .sandbox-notice{font-size:12px;color:#afcec3}
+    .sandbox-stage{background:#102b29;border-left:3px solid var(--mint);border-radius:9px;padding:12px 15px;margin:0 0 16px}
+    .sandbox-stage span{font-size:12px;color:var(--mint);font-weight:850;letter-spacing:.08em}
+    .sandbox-stage p{color:#bbd2cb;font-size:13px;margin:6px 0 0}
+    .sandbox-control{background:#122c35;border:1px solid #375961;border-radius:11px;padding:15px;margin-bottom:14px}
+    .sandbox-control label{display:block;font-size:13px;font-weight:750;margin-bottom:7px}
+    .sandbox-control select{width:100%;background:#071a24;color:var(--fg);border:1px solid #52716d;border-radius:8px;padding:11px;min-height:44px}
+    .sandbox-control p{margin:8px 0 0;font-size:12px;color:var(--dim)}
+    [hidden]{display:none!important}
+    #result-payload{font-size:12px;max-height:200px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--mint)}
+    .sandbox-results details{margin:8px 0 14px}
+    .sandbox-results summary{cursor:pointer;color:#c9e6df;font-size:13px}
     @media(max-width:830px){.hero{grid-template-columns:1fr;padding:55px 0}.demo{grid-template-columns:1fr}.guide,.split{grid-template-columns:1fr}.hero-card{max-width:510px}.navlinks{gap:12px}}
     @media(max-width:540px){.wrap{padding:0 17px}.hero h1{font-size:42px}.feedback-grid{grid-template-columns:1fr}.navlinks a:first-child{display:none}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
@@ -55,32 +66,53 @@
         <div class="headline">AGENTSHIELD / POLICY GATE</div>
         <div class="flowrow"><span>read_document</span><span class="pill">ALLOW</span></div>
         <div class="flowrow"><span>send_email (no approval)</span><span class="pill red">DENY</span></div>
-        <div class="flowrow"><span>delete_file (no approval)</span><span class="pill red">DENY</span></div>
-        <div class="flowrow"><span>fetch_url (unlisted host)</span><span class="pill red">DENY</span></div>
-        <div class="flowrow"><span>Unwrapped tool path</span><span class="pill grey">OUTSIDE BOUNDARY</span></div>
+        <div class="flowrow"><span>delete_file (approved once)</span><span class="pill">ALLOW</span></div>
+        <div class="flowrow"><span>fetch_url (exact host allowlist)</span><span class="pill">ALLOW</span></div>
+        <div class="flowrow"><span>execute_shell (no approval)</span><span class="pill red">DENY</span></div>
         <p class="tiny">Illustrative outcomes from explicit SDK policy rules. The model itself is not evaluated here.</p>
       </div>
     </div>
     <section id="demo" aria-labelledby="demo-title">
-      <div class="sectionhead"><div class="eyebrow">Hands-on demo</div><h2 id="demo-title">Try a tool. Approve it. See the effect.</h2><p>Choose a tool action and run an isolated in-memory handler. Approve a synthetic email, then deny it with the guard. Nothing is sent over the network.</p></div>
+      <div class="sectionhead"><div class="eyebrow">Hands-on demo</div><h2 id="demo-title">All five tools. Every policy decision. Visible results.</h2><p>Read a note, send a fictional email, delete a sample file, inspect a trusted URL, and run a toy command. Every action can show a real in-memory result. Nothing reaches your email, device or network.</p></div>
       <div class="demo">
         <aside class="left" aria-label="Example tool calls">
-          <h3>Choose a tool request</h3>
+          <h3>Complete all five stages</h3>
           <div id="scenarios"></div>
         </aside>
-        <div class="right" data-demo-version="sandbox-approval-v2">
+        <div class="right" data-demo-version="sandbox-all-five-v3">
           <div class="mode" role="group" aria-label="Guard mode">
             <button id="without" type="button" aria-pressed="false">Without AgentShield</button>
             <button id="with" type="button" aria-pressed="true">With AgentShield</button>
           </div>
-          <div class="sandbox-approval" id="approval-panel">
-            <label for="approval">Email approval callback (one synthetic request)</label>
+          <div class="sandbox-stage">
+            <span id="stage-progress">Stage 1 of 5</span>
+            <p id="scenario-hint" role="status">Select a stage and try its controls.</p>
+          </div>
+          <div class="sandbox-approval sandbox-control" id="approval-panel" hidden>
+            <label for="approval" id="approval-label">One-time human review</label>
             <select id="approval">
-              <option value="none">Not configured — deny</option>
-              <option value="deny">Ask reviewer → deny</option>
-              <option value="approve">Ask reviewer → approve one sandbox email</option>
+              <option value="none">No approval — deny this request</option>
+              <option value="deny">Reviewer explicitly denies this request</option>
+              <option value="approve">Reviewer approves ONE synthetic action</option>
             </select>
-            <p id="approval-help">Choose approve to authorize one in-memory email handler. Nothing is delivered.</p>
+            <p id="approval-help">This authorization is single-use and is automatically reset after execution.</p>
+          </div>
+          <div class="sandbox-control" id="destination-panel" hidden>
+            <label for="destination">Choose an exact HTTPS destination</label>
+            <select id="destination">
+              <option value="https://unlisted.example.test/demo">Untrusted host — blocked</option>
+              <option value="https://docs.agentshield.test/guide">Trusted docs host — allowed (offline fixture)</option>
+              <option value="https://docs.agentshield.test/policy">Trusted policy page — allowed (offline fixture)</option>
+            </select>
+            <p>Only the fictional docs.agentshield.test HTTPS host is on the sandbox allowlist. No HTTP request occurs.</p>
+          </div>
+          <div class="sandbox-control" id="command-panel" hidden>
+            <label for="command-choice">Choose a pre-defined toy command</label>
+            <select id="command-choice">
+              <option value="echo AgentShield demo">echo AgentShield demo</option>
+              <option value="pwd">pwd (synthetic location)</option>
+            </select>
+            <p>Only a JavaScript fixture interpreter runs. This never launches a system shell.</p>
           </div>
           <div class="terminal" role="region" aria-label="Simulation output">
             <div class="terminalhead">agent-runtime / simulated-trace.json</div>
@@ -89,8 +121,9 @@
           <p class="status idle" id="decision" role="status">Ready to replay</p>
           <p class="detail" id="explanation"></p>
           <div class="demo-controls">
-            <button class="btn primary" id="run" type="button">▶ Execute sandbox tool</button>
-            <button class="btn" id="guided" type="button">▶ Guided walkthrough</button>
+            <button class="btn primary" id="run" type="button">▶ Execute selected tool</button>
+            <button class="btn" id="next-scenario" type="button">Next stage →</button>
+            <button class="btn" id="guided" type="button">▶ Tour all 5 stages</button>
           </div>
           <div class="sandbox-results" aria-label="Sandbox execution effects">
             <h3>Actual effects inside this browser sandbox</h3>
@@ -98,22 +131,25 @@
               <span>Simulated outbox: <strong id="outbox-count">0</strong></span>
               <span>Document reads: <strong id="read-count">0</strong></span>
               <span>Sample file: <strong id="file-status">Present</strong></span>
+              <span>Offline URL lookups: <strong id="fetch-count">0</strong></span>
+              <span>Toy commands: <strong id="command-count">0</strong></span>
             </div>
             <p id="sandbox-output" role="status">No handler executed yet.</p>
+            <details open><summary>View last handler result</summary><pre id="result-payload">{}</pre></details>
             <details><summary>View local authorization audit log</summary><pre id="audit">[]</pre></details>
             <button id="reset-sandbox" class="btn" type="button">Reset sandbox state</button>
-            <p class="sandbox-notice">JavaScript fixture handlers update fictional data in memory. They never send email, delete device files, run shell commands, fetch URLs, or invoke the Python SDK. The policy logic mirrors the SDK's documented cases.</p>
+            <p class="sandbox-notice">Every handler runs exclusively inside the browser's memory. The command stage is a toy interpreter, the URL stage returns predefined offline content, and all emails/files are fictional. This is not an execution of the Python SDK.</p>
           </div>
-          <p class="footnote">This is a safe product demo, not a live model attack or remote agent service. To guard real agent tools, integrate the Python SDK's wrapped registry.</p>
+          <p class="footnote">This is a safe, functional policy sandbox—not a live LLM attack, actual network request, real email, or remote security service. To protect a real app, register the Python SDK's wrapped handlers.</p>
         </div>
       </div>
     </section>
     <section id="walkthrough" aria-labelledby="walk-title">
       <div class="sectionhead"><div class="eyebrow">Quick walkthrough</div><h2 id="walk-title">Understand it in 60 seconds.</h2></div>
       <div class="guide">
-        <div class="card"><span class="num">01</span><h3>Select “Send email”</h3><p>Imagine an untrusted document telling the agent to send a message the user never authorized. Pick that tool request in the library.</p></div>
-        <div class="card"><span class="num">02</span><h3>Compare guard off and on</h3><p>Run without the guard to place a fictional email in the outbox. Then run with the guard and no approval: nothing new is recorded.</p></div>
-        <div class="card"><span class="num">03</span><h3>Try the SDK and tell us what's missing</h3><p>Approve one guarded email to see an authorized in-memory send. Reset the sandbox, inspect Python integration, and share your framework.</p></div>
+        <div class="card"><span class="num">01</span><h3>Read, email, delete</h3><p>Run the allowed document reader. Deny an email or deletion, then explicitly approve one fictional operation to observe the effect.</p></div>
+        <div class="card"><span class="num">02</span><h3>Check a URL and command</h3><p>Change an untrusted URL to a trusted HTTPS host. Approve a harmless toy command and inspect the visible offline results.</p></div>
+        <div class="card"><span class="num">03</span><h3>Tour all five and inspect</h3><p>Use the 5-stage tour, inspect the audit trail, reset the sandbox, and share the real agent framework you would integrate.</p></div>
       </div>
     </section>
     <section id="integration" aria-labelledby="sdk-title">
