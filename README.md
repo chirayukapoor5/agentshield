@@ -4,7 +4,7 @@
 
 The new [standalone interactive product demo](public-demo/index.html) lets developers compare a registered AgentShield guard against an unwrapped tool path in five synthetic scenarios. It includes a guided walkthrough, an SDK snippet, and a route to real developer feedback.
 
-**Publishing status (2026-11-07):** The static demo's build and behavior tests passed, but GitHub Pages must first be enabled under [repository Settings → Pages](https://github.com/chirayukapoor5/agentshield/settings/pages). Do **not** describe `https://chirayukapoor5.github.io/agentshield/` as live until its HTTPS response and interactions are verified. After enabling Pages → **Source: GitHub Actions**, run [publish-agent-shield-showcase](https://github.com/chirayukapoor5/agentshield/actions/workflows/publish-showcase.yml).
+**Published and verified (November 7, 2026): [Try the live AgentShield Guard demo](https://chirayukapoor5.github.io/agentshield/).** GitHub Pages deployment [#42362092218](https://github.com/chirayukapoor5/agentshield/actions/runs/42362092218) passed the build, SDK-style browser replay checks, publication and unauthenticated HTTPS verification (HTTP 200, containing demo and feedback sections). The release entrypoint is `.github/workflows/nextjs.yml` on `main`, which checks out `public-demo/` from this research branch and publishes only the standalone static demo.
 
 - [Download the independently verified static preview](https://github.com/chirayukapoor5/agentshield/actions/runs/42359471308/artifacts/13569255940) (GitHub Actions artifact).
 - [View and contribute developer feedback](https://github.com/chirayukapoor5/agentshield/issues/2) — no external input has been claimed yet.
