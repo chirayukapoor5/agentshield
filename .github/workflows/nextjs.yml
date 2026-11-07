@@ -25,12 +25,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
-      - name: Checkout CI-verified five-stage showcase release
+      - name: Checkout CI-verified five-stage showcase and LangGraph quickstart
         uses: actions/checkout@v4
         with:
           # Pin to exact research commit with successful offline + Chromium CI.
           # Update only after reviewing a new passing verification run.
-          ref: b2622feb21f21a26c7c108b823deb226458b0689
+          ref: 047792368d8e0ed926dc18eee378abced98b3d88
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
