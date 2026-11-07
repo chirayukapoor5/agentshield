@@ -7,7 +7,8 @@ from .guard import AgentShield, Decision, DeniedToolCall, ToolPolicy
 from .chat_tools import MalformedToolCalls, dispatch_chat_tool_calls
 from .agent_loop import AgentRun, ModelProtocolError, run_tool_agent
 from .groq_transport import GroqChatTransport, GroqTransportError
+from .langchain_tools import wrap_langchain_tools
 
 __all__ = ["AgentShield", "Decision", "DeniedToolCall", "ToolPolicy", "MalformedToolCalls", "dispatch_chat_tool_calls", "AgentRun", "ModelProtocolError", "run_tool_agent",
-           "GroqChatTransport", "GroqTransportError"]
+           "GroqChatTransport", "GroqTransportError", "wrap_langchain_tools"]
 __version__ = "0.1.0"
