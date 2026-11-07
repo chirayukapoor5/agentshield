@@ -79,11 +79,11 @@ def verify(path: Path) -> dict:
     if any(secret in text or secret in bundled_js for secret in PROHIBITED):
         raise ValueError("potential secret or dangerous runtime expression")
     for required in ("synthetic", "not a", "github.com/chirayukapoor5/agentshield/issues/new",
-                     "privacy", "aria-live", "approval-panel", "outbox-count", "sandbox-approval-v2"):
+                     "privacy", "aria-live", "approval-panel", "outbox-count", "sandbox-all-five-v3"):
         if required.lower() not in (text + "\n" + bundled_js).lower():
             raise ValueError(f"missing product/demo transparency signal: {required}")
     inline_js = bundled_js
-    if not inline_js.strip() or "handler_executed:executed" not in bundled_js:
+    if not inline_js.strip() or "handler_executed:executable" not in bundled_js:
         raise ValueError("missing executable sandbox JavaScript")
     if shutil.which("node"):
         with tempfile.TemporaryDirectory() as tempdir:
