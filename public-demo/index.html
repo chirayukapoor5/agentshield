@@ -40,6 +40,13 @@
     #result-payload{font-size:12px;max-height:200px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--mint)}
     .sandbox-results details{margin:8px 0 14px}
     .sandbox-results summary{cursor:pointer;color:#c9e6df;font-size:13px}
+    .scoregrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:24px 0}
+    .scorepanel{background:#10242e;border:1px solid #345251;border-radius:13px;padding:20px}
+    .scorepanel .measure{font-size:30px;letter-spacing:-.04em;line-height:1.2;font-weight:850;color:#d7f7e7;margin:8px 0}
+    .scorepanel .metric-label{font-size:12px;color:#a3bac1;font-weight:700;letter-spacing:.03em}
+    .scorepanel p{color:#a9bfc3;font-size:12px;line-height:1.55;margin:0 0 12px}
+    .scorepanel a{font-size:12px}
+    @media(max-width:830px){.scoregrid{grid-template-columns:1fr}}
     @media(max-width:830px){.hero{grid-template-columns:1fr;padding:55px 0}.demo{grid-template-columns:1fr}.guide,.split{grid-template-columns:1fr}.hero-card{max-width:510px}.navlinks{gap:12px}}
     @media(max-width:540px){.wrap{padding:0 17px}.hero h1{font-size:42px}.feedback-grid{grid-template-columns:1fr}.navlinks a:first-child{display:none}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
@@ -215,7 +222,12 @@ print(guarded["send_email"](
       </div>
     </section>
     <section id="evidence">
-      <div class="sectionhead"><div class="eyebrow">Verified engineering, limited claims</div><h2>What is tested—and what isn't.</h2><p>AgentShield now has a runnable LangGraph adapter, automated policy tests, and one verified Groq model-generated read-only tool call. The single real-model canary did not attempt a forbidden tool; the five-stage browser sandbox remains synthetic. Neither establishes a measured multilingual AgentDojo defense-efficacy result.</p></div>
+      <div class="sectionhead"><div class="eyebrow">Verified engineering, limited claims</div><h2>What is tested—and what isn't.</h2><p>These are reproducible engineering checks, NOT an aggregate security rating. AgentShield has one verified real Groq read-only tool call; the live model did not attempt a forbidden tool. Official multilingual AgentDojo defense-efficacy rates are not yet available.</p></div>
+      <div class="scoregrid" id="evidence-scorecard" aria-label="Engineering evidence scorecard">
+        <div class="scorepanel"><div class="metric-label">SDK unit + framework tests</div><div class="measure">79 / 79</div><p>All automated assertions passed on Python 3.10 and 3.12. This is test pass coverage, not attacker resistance.</p><a href="https://github.com/chirayukapoor5/agentshield/actions/runs/42369115968" target="_blank" rel="noopener noreferrer">Verify test run ↗</a></div>
+        <div class="scorepanel"><div class="metric-label">Synthetic browser stages</div><div class="measure">5 / 5</div><p>All five simulated tool workflows passed desktop and mobile Chromium acceptance. No external tools run.</p><a href="https://github.com/chirayukapoor5/agentshield/actions/runs/42366014251" target="_blank" rel="noopener noreferrer">Verify browser tests ↗</a></div>
+        <div class="scorepanel"><div class="metric-label">Measured multilingual attack ASR</div><div class="measure">N/A</div><p>Official held-out C1–C4 trials have not been completed. We do not invent a protection percentage.</p><a href="https://github.com/chirayukapoor5/agentshield/blob/research/multilingual-injection-2026/docs/SCORING_METHODOLOGY.md" target="_blank" rel="noopener noreferrer">Scoring formulas and methods ↗</a></div>
+      </div>
       <div class="actions">
         <a class="btn" href="https://github.com/chirayukapoor5/agentshield/actions" target="_blank" rel="noopener noreferrer">Inspect current CI runs ↗</a>
         <a class="btn" href="https://github.com/chirayukapoor5/agentshield/blob/research/multilingual-injection-2026/docs/LIVE_MODEL_CANARY_2026-11-07.md" target="_blank" rel="noopener noreferrer">Inspect single live Groq tool-call evidence ↗</a>
