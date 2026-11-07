@@ -116,3 +116,38 @@ def test_handler_exception_has_no_exception_detail():
                                         [call()])[0]
     assert "secret configuration details" not in message["content"]
     assert json.loads(message["content"])["error"] == "tool_execution_failed"
+
+
+
+@pytest.mark.parametrize("raw", [
+    '{"text":"\ud800"}',
+    '{"text":"\\ud800"}',
+    '{"te\\udfffxt":"data"}',
+    '{"nested":[{"text":"\\ud800"}]}',
+])
+def test_unpaired_unicode_surrogates_fail_closed_before_batch_side_effects(raw):
+    executions = []
+    shield = AgentShield(ToolPolicy(read_only_tools={"lookup"}))
+    with pytest.raises(MalformedToolCalls):
+        dispatch_chat_tool_calls(
+            shield, {"lookup": lambda text: executions.append(text)},
+            [call(identifier="first", name="lookup", args='{"topic":"safe"}'),
+             call(identifier="bad", name="lookup", args=raw)],
+        )
+    assert executions == []
+
+
+@pytest.mark.parametrize("bad_id,bad_name", [
+    ("\ud800", "lookup"),
+    ("normal", "lookup\udfff"),
+])
+def test_invalid_unicode_in_tool_metadata_rejects_batch(bad_id, bad_name):
+    seen = []
+    shield = AgentShield(ToolPolicy(read_only_tools={"lookup"}))
+    with pytest.raises(MalformedToolCalls):
+        dispatch_chat_tool_calls(
+            shield, {"lookup": lambda topic: seen.append(topic)},
+            [call(identifier="first", args='{"topic":"ok"}'),
+             call(identifier=bad_id, name=bad_name, args='{"topic":"bad"}')],
+        )
+    assert not seen
