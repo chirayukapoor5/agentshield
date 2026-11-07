@@ -168,7 +168,7 @@ export default function LabPage() {
             <p className="lab-lead">A Python policy gate for tool-using AI agents. See how unauthorized email, file deletion, and outbound requests are denied before the wrapped tool executes—then inspect the code.</p>
             <div className="lab-actions">
               <a href="#simulation" className="lab-btn lab-btn-primary">▶ Compare guarded vs unguarded</a>
-              <a href="#proof" className="lab-btn lab-btn-ghost">Explore verified evidence ↗</a>
+              <a href="#integration" className="lab-btn lab-btn-ghost">View 10-line integration ↗</a>
             </div>
             <p className="lab-disclaimer"><strong>Demonstration only.</strong> This is a deterministic browser replay of the SDK test scenarios—not a live LLM, a penetration test, or a measured prompt-injection defense rate.</p>
           </div>
@@ -283,10 +283,10 @@ secured_tools = shield.wrap_registry({
         </section>
 
         <section className="lab-share">
-          <div><p className="lab-eyebrow">SHOW THE WORK</p><h2>Record a walkthrough.</h2><p>Use the built-in replay with any screen recorder. Keep the synthetic demo label visible and link to the CI evidence.</p></div>
+          <div><p className="lab-eyebrow">SHOW THE WORK</p><h2>Record a walkthrough.</h2><p>Try guarded vs unguarded mode, then tell us which agent framework you use and what dangerous tool action you need to control. No signup required.</p></div>
           <div className="lab-share-actions">
             <button type="button" className="lab-btn lab-btn-primary" onClick={copyShare}>{showRecording ? '✓ Page link copied' : 'Copy demo link'}</button>
-            <a href={`${REPO}/pull/1`} target="_blank" rel="noreferrer" className="lab-btn lab-btn-ghost">Open research PR ↗</a>
+            <a href={`${REPO}/issues/new?title=AgentShield%20developer%20feedback&body=My%20agent%20framework%3A%20%0AThe%20tool%20action%20I%20need%20to%20guard%3A%20%0AMy%20biggest%20integration%20blocker%3A%20`} target="_blank" rel="noreferrer" className="lab-btn lab-btn-ghost">Request an integration / give feedback ↗</a>
           </div>
         </section>
         <footer className="lab-footer"><span>◇ AGENTSHIELD LAB · EXPERIMENTAL OPEN-SOURCE DEMO</span><span>Not a security certification. No production claims. <Link href="/">Workspace dashboard →</Link></span></footer>
