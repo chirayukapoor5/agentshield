@@ -1,5 +1,17 @@
 # AgentShield
 
+## Try the AgentShield Guard showcase
+
+The new [standalone interactive product demo](public-demo/index.html) lets developers compare a registered AgentShield guard against an unwrapped tool path in five synthetic scenarios. It includes a guided walkthrough, an SDK snippet, and a route to real developer feedback.
+
+**Publishing status (2026-11-07):** The static demo's build and behavior tests passed, but GitHub Pages must first be enabled under [repository Settings → Pages](https://github.com/chirayukapoor5/agentshield/settings/pages). Do **not** describe `https://chirayukapoor5.github.io/agentshield/` as live until its HTTPS response and interactions are verified. After enabling Pages → **Source: GitHub Actions**, run [publish-agent-shield-showcase](https://github.com/chirayukapoor5/agentshield/actions/workflows/publish-showcase.yml).
+
+- [Download the independently verified static preview](https://github.com/chirayukapoor5/agentshield/actions/runs/42359471308/artifacts/13569255940) (GitHub Actions artifact).
+- [View and contribute developer feedback](https://github.com/chirayukapoor5/agentshield/issues/2) — no external input has been claimed yet.
+- [60-second walkthrough and launch checklist](docs/SHOWCASE_LAUNCH.md).
+
+This is a deterministic SDK policy demonstration, **not** a live model-security test or measured AgentDojo attack-success rate.
+
 AgentShield is a prototype for owner-authorized website compatibility and security checks. It combines a FastAPI backend, SQLAlchemy persistence, Alembic migrations, and a Next.js dashboard.
 
 > **Project status:** prototype. Ownership is verified through a DNS TXT challenge before scanning. The scanner makes bounded, non-destructive public HTTP(S) requests and persists evidence for the checks it implements. It is not a penetration test, security certification, or guarantee that a site is safe.
