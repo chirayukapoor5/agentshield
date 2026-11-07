@@ -54,3 +54,26 @@ def test_missing_trace_reported_not_silently_ignored(tmp_path):
     report = audit_traces(path)
     assert report["status"] == "trace_audit_failed"
     assert report["failures"] == ["fixture: trace file missing"]
+
+
+def test_duplicate_json_trace_keys_refused(tmp_path):
+    """A later duplicate must not silently override an earlier checker claim."""
+    path = make_run(tmp_path)
+    trace_path = tmp_path / "traces" / "fixture.json"
+    original = trace_path.read_text(encoding="utf-8")
+    # Inject duplicate top-level checker key while retaining otherwise valid JSON.
+    trace_path.write_text(original[:-1] + ', "checker": "agentdojo.TaskSuite.run_task_with_pipeline"}', encoding="utf-8")
+    report = audit_traces(path)
+    assert report["status"] == "trace_audit_failed"
+    assert report["verified_scored_traces"] == 0
+    assert report["failures"] == ["fixture: invalid trace JSON"]
+
+
+def test_duplicate_nested_json_trace_keys_refused(tmp_path):
+    path = make_run(tmp_path)
+    trace_path = tmp_path / "traces" / "fixture.json"
+    original = trace_path.read_text(encoding="utf-8")
+    trace_path.write_text(original[:-1] + ', "metadata": {"seed": 11, "seed": 23}}', encoding="utf-8")
+    report = audit_traces(path)
+    assert report["status"] == "trace_audit_failed"
+    assert report["verified_scored_traces"] == 0
