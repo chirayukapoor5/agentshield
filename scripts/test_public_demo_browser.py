@@ -112,7 +112,7 @@ def main() -> None:
         assert page.locator("#file-status").inner_text() == "Present"
         assert page.locator("#fetch-count").inner_text() == "1"
         assert page.locator("#command-count").inner_text() == "1"
-        assert len(json.loads(page.locator("#audit").inner_text())) == 5
+        assert len(json.loads(page.locator("#audit").text_content())) == 5
         page.screenshot(path=str(SHOT / "desktop-five-stages.png"), full_page=True)
 
         # Feedback opens a draft, not an unconsented post or hidden backend.
