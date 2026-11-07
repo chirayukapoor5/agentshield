@@ -102,6 +102,21 @@ assert.equal(trace.policy_enforced, false);
 assert.equal(trace.decision, 'outside_policy_boundary');
 assert.equal(trace.handler_executed, false);
 
+// The guided walkthrough must show an unguarded request followed by a
+// denied guard decision, without any executable tools or timers on the host.
+get('guided').click();
+trace = JSON.parse(get('trace').textContent);
+assert.equal(trace.tool_request.name, 'send_email');
+assert.equal(trace.decision, 'outside_policy_boundary');
+assert.equal(timers.length, 1);
+timers.shift()();
+trace = JSON.parse(get('trace').textContent);
+assert.equal(trace.policy_enforced, true);
+assert.equal(trace.decision, 'denied');
+assert.equal(trace.handler_executed, false);
+assert.equal(timers.length, 1);
+timers.shift()();
+
 get('with').click();
 get('scenarios').children[0].click();
 get('run').click();
