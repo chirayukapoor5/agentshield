@@ -1,9 +1,5 @@
 name: groq-local-tool-smoke
 on:
-  # One bounded synthetic live canary; revert to manual-only after the run.
-  push:
-    branches: [research/multilingual-injection-2026]
-    paths: [".github/workflows/groq-tool-smoke.yml"]
   workflow_dispatch:
     inputs:
       model:
