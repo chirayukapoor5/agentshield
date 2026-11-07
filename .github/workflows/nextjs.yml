@@ -30,7 +30,7 @@ jobs:
         with:
           # Pin to exact research commit with successful offline + Chromium CI.
           # Update only after reviewing a new passing verification run.
-          ref: 6ba6dc74e67dbb526a54d8e0e4f4e0dbab4957b2
+          ref: 990cff2d615d9461c096848edd8ebfcd049bea0d
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -44,6 +44,7 @@ jobs:
           node scripts/test_public_demo.mjs
           test -s public-demo/index.html
           grep -q 'sandbox-all-five-v3' public-demo/index.html
+          grep -q 'evidence-scorecard' public-demo/index.html
           grep -q 'def human_approval(tool, args):' public-demo/index.html
           test -s public-demo/sandbox.js
       - name: Install real headless Chromium test environment
@@ -69,8 +70,8 @@ jobs:
           path: public-demo
 
   deploy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
     needs: build
     environment:
       name: github-pages
@@ -91,7 +92,7 @@ jobs:
           esac
           for attempt in 1 2 3 4 5 6 7 8; do
             code=$(curl --proto '=https' --max-redirs 3 -sS -L --max-time 20 -o /tmp/agentshield-showcase.html -w '%{http_code}' "$PAGE_URL" || true)
-            if [ "$code" = "200" ] && grep -q 'id="demo"' /tmp/agentshield-showcase.html && grep -q 'id="feedback"' /tmp/agentshield-showcase.html && grep -q 'sandbox-all-five-v3' /tmp/agentshield-showcase.html && grep -q 'def human_approval(tool, args):' /tmp/agentshield-showcase.html; then
+            if [ "$code" = "200" ] && grep -q 'id="demo"' /tmp/agentshield-showcase.html && grep -q 'id="feedback"' /tmp/agentshield-showcase.html && grep -q 'sandbox-all-five-v3' /tmp/agentshield-showcase.html && grep -q 'id="evidence-scorecard"' /tmp/agentshield-showcase.html && grep -q 'def human_approval(tool, args):' /tmp/agentshield-showcase.html; then
               js_code=$(curl --proto '=https' --max-redirs 3 -sS -L --max-time 20 -o /tmp/agentshield-sandbox.js -w '%{http_code}' "${PAGE_URL%/}/sandbox.js" || true)
               if [ "$js_code" = "200" ] && grep -q 'synthetic_browser_sandbox_v3' /tmp/agentshield-sandbox.js; then
                 echo "PUBLIC_DEMO_V3_VERIFIED: $PAGE_URL HTTP $code; sandbox.js HTTP $js_code"
@@ -103,3 +104,25 @@ jobs:
           done
           echo "Pages deployment is not yet publicly reachable with the intended content"
           exit 1
+      - name: Checkout the exact released source for browser acceptance
+        uses: actions/checkout@v4
+        with:
+          ref: 990cff2d615d9461c096848edd8ebfcd049bea0d
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Chromium for published-site acceptance
+        run: |
+          python -m pip install "playwright==1.57.0"
+          python -m playwright install --with-deps chromium
+      - name: Verify actual public HTTPS interactive stages and scorecard
+        run: python scripts/test_public_demo_browser.py --live
+      - name: Upload live browser acceptance screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-site-browser-acceptance
+          path: data/ui-acceptance/
+          if-no-files-found: ignore
+          retention-days: 14
