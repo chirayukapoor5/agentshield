@@ -1,0 +1,66 @@
+name: publish-agent-shield-showcase
+
+on:
+  push:
+    branches:
+      - research/multilingual-injection-2026
+    paths:
+      - public-demo/**
+      - scripts/verify_public_demo.py
+      - .github/workflows/publish-showcase.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: agentshield-showcase-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify static demo and JavaScript syntax
+        run: python scripts/verify_public_demo.py
+      - name: Prepare no-Jekyll static site
+        shell: bash
+        run: |
+          touch public-demo/.nojekyll
+          test -s public-demo/index.html
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload static showcase
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: public-demo
+
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Print published URL
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          echo "GitHub Pages reported deployment URL: $PAGE_URL"
+          test -n "$PAGE_URL"
