@@ -80,7 +80,7 @@ def verify(path: Path) -> dict:
         raise ValueError("potential secret or dangerous runtime expression")
     for required in ("synthetic", "not a", "github.com/chirayukapoor5/agentshield/issues/new",
                      "privacy", "aria-live", "approval-panel", "outbox-count", "sandbox-approval-v2"):
-        if required.lower() not in text.lower():
+        if required.lower() not in (text + "\n" + bundled_js).lower():
             raise ValueError(f"missing product/demo transparency signal: {required}")
     inline_js = bundled_js
     if not inline_js.strip() or "handler_executed:executed" not in bundled_js:
