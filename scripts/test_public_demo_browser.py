@@ -6,13 +6,15 @@ Uses only file:// assets. No LLM, external network requests or real tools.
 """
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
-SITE = (ROOT / "public-demo" / "index.html").as_uri()
+LOCAL_SITE = (ROOT / "public-demo" / "index.html").as_uri()
+LIVE_SITE = "https://chirayukapoor5.github.io/agentshield/"
 SHOT = ROOT / "data" / "ui-acceptance"
 
 
@@ -21,6 +23,10 @@ def trace(page) -> dict:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--live", action="store_true", help="Test the published HTTPS GitHub Pages site rather than local files")
+    args = parser.parse_args()
+    site = LIVE_SITE if args.live else LOCAL_SITE
     SHOT.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True, args=["--no-sandbox"])
@@ -29,10 +35,14 @@ def main() -> None:
         page.on("pageerror", lambda e: issues.append(str(e)))
         external = []
         page.on("request", lambda r: external.append(r.url)
-                if r.url.startswith(("http://", "https://")) else None)
-        page.goto(SITE)
+                if r.url.startswith(("http://", "https://"))
+                and not (args.live and r.url.startswith(LIVE_SITE)) else None)
+        page.goto(site)
         page.wait_for_function("document.querySelectorAll('#scenarios button').length===5")
         assert page.locator("#stage-progress").inner_text() == "Stage 1 of 5"
+        assert page.locator("#evidence-scorecard").is_visible()
+        assert "79 / 79" in page.locator("#evidence-scorecard").inner_text()
+        assert "N/A" in page.locator("#evidence-scorecard").inner_text()
 
         # Read.
         page.click("#run")
@@ -130,7 +140,7 @@ def main() -> None:
         # Mobile smoke for the same real HTML+JS entrypoint.
         mobile = browser.new_page(viewport={"width": 390, "height": 844}, is_mobile=True)
         mobile.on("pageerror", lambda e: issues.append(str(e)))
-        mobile.goto(SITE)
+        mobile.goto(site)
         mobile.locator("#scenarios button").nth(3).click()
         mobile.select_option("#destination", "https://docs.agentshield.test/policy")
         mobile.click("#run")
@@ -140,7 +150,7 @@ def main() -> None:
         mobile.screenshot(path=str(SHOT / "mobile-url-stage.png"), full_page=True)
         assert not issues, "browser JS errors: " + repr(issues)
         browser.close()
-    print("PASS: Chromium desktop/mobile, 5 tools, denied/approved execution, exact host, synthetic command, guided tour, feedback draft, zero external requests.")
+    print(("LIVE HTTPS" if args.live else "LOCAL FILE") + ": PASS Chromium desktop/mobile, all 5 synthetic handlers, denied/approved execution, exact host, toy command, guided tour, evidence scorecard, feedback draft, zero external third-party requests.")
 
 
 if __name__ == "__main__":
