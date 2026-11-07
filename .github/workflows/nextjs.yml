@@ -30,7 +30,7 @@ jobs:
         with:
           # Pin to exact research commit with successful offline + Chromium CI.
           # Update only after reviewing a new passing verification run.
-          ref: 047792368d8e0ed926dc18eee378abced98b3d88
+          ref: 6ba6dc74e67dbb526a54d8e0e4f4e0dbab4957b2
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
