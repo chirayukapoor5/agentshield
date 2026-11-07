@@ -14,6 +14,7 @@ import json
 from langchain_core.messages import AIMessage
 from langchain_core.tools import tool
 from langgraph.prebuilt import ToolNode
+from langgraph.graph import START, END, MessagesState, StateGraph
 
 from agentshield_guard import AgentShield, ToolPolicy, wrap_langchain_tools
 
@@ -53,14 +54,18 @@ def demo() -> dict:
     # SECURITY: feed *only these* wrapped tool definitions to both the
     # model's bind_tools and ToolNode. The raw tools remain unprotected.
     secured = wrap_langchain_tools(shield, [read_document, send_email])
-    node = ToolNode(secured)
+    builder = StateGraph(MessagesState)
+    builder.add_node("tools", ToolNode(secured))
+    builder.add_edge(START, "tools")
+    builder.add_edge("tools", END)
+    graph = builder.compile()
 
     def tool_call(name: str, args: dict, identifier: str) -> str:
         message = AIMessage(content="", tool_calls=[{
             "name": name, "args": args, "id": identifier, "type": "tool_call"
         }])
-        outcome = node.invoke({"messages": [message]})
-        return str(outcome["messages"][0].content)
+        outcome = graph.invoke({"messages": [message]})
+        return str(outcome["messages"][-1].content)
 
     read = tool_call("read_document", {"document_id": "sample-1"}, "call_read")
     denied = tool_call("send_email", {
