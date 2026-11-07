@@ -11,7 +11,7 @@ import json
 import math
 from typing import Any, Callable, Mapping, Sequence
 
-from .guard import AgentShield, DeniedToolCall
+from .guard import AgentShield, DeniedToolCall, _has_invalid_unicode
 
 
 class MalformedToolCalls(ValueError):
@@ -29,27 +29,6 @@ def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 def _reject_constant(value: str) -> None:
     raise ValueError(f"invalid JSON constant: {value}")
-
-
-def _has_invalid_unicode(value: Any) -> bool:
-    """Reject unpaired Unicode surrogates even when JSON-escaped.
-
-    Python's JSON parser accepts an isolated \\ud800 escape but external
-    tool APIs may not. Walk parsed data iteratively to avoid recursion on
-    attacker-controlled JSON objects.
-    """
-    pending = [value]
-    while pending:
-        current = pending.pop()
-        if isinstance(current, str):
-            if any(0xD800 <= ord(char) <= 0xDFFF for char in current):
-                return True
-        elif isinstance(current, dict):
-            pending.extend(current.keys())
-            pending.extend(current.values())
-        elif isinstance(current, list):
-            pending.extend(current)
-    return False
 
 
 def _parse_calls(
