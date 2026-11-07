@@ -56,7 +56,13 @@ def _parse_calls(
         raw = function.get("arguments")
         if not isinstance(name, str) or not name or len(name) > 256:
             raise MalformedToolCalls("invalid tool name")
-        if not isinstance(raw, str) or len(raw.encode("utf-8")) > max_argument_bytes:
+        if not isinstance(raw, str):
+            raise MalformedToolCalls("invalid or oversized tool arguments")
+        try:
+            byte_count = len(raw.encode("utf-8"))
+        except UnicodeError as exc:
+            raise MalformedToolCalls("invalid UTF-8 tool arguments") from exc
+        if byte_count > max_argument_bytes:
             raise MalformedToolCalls("invalid or oversized tool arguments")
         try:
             args = json.loads(raw, object_pairs_hook=_unique_object,
