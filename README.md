@@ -24,6 +24,8 @@ This executable example invokes a real compiled LangGraph `ToolNode` using ficti
 
 A separate [bounded Groq live-model canary on November 7](https://github.com/chirayukapoor5/agentshield/actions/runs/42369186158) successfully executed **one model-generated `read_note` tool call** in two provider turns. The real model did not attempt an email call; this must **not** be presented as an attack-success-rate or prompt-injection-resistance result. See [evidence and limitations](https://github.com/chirayukapoor5/agentshield/blob/research/multilingual-injection-2026/docs/LIVE_MODEL_CANARY_2026-11-07.md).
 
+**Verified public scorecard and methodology:** the latest [GitHub Pages live-browser acceptance run #42370197563](https://github.com/chirayukapoor5/agentshield/actions/runs/42370197563) used Chromium against the *public HTTPS URL* on desktop and mobile, exercised all five synthetic stages, verified the evidence scorecard and feedback draft, and detected no third-party requests. The demo's **79/79 SDK tests** and **5/5 UI stages** are engineering test results; multilingual defense ASR is **N/A**, not 100%. [See the exact three scoring methods and formulas](https://github.com/chirayukapoor5/agentshield/blob/research/multilingual-injection-2026/docs/SCORING_METHODOLOGY.md).
+
 The current Guard SDK and research code are on branch [research/multilingual-injection-2026](https://github.com/chirayukapoor5/agentshield/tree/research/multilingual-injection-2026); [developer feedback is welcome in issue #2](https://github.com/chirayukapoor5/agentshield/issues/2).
 
 This is a **policy-boundary simulation**, not a live attack, measured multilingual defense efficacy, or production security guarantee.
