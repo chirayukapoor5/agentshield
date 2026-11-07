@@ -130,7 +130,7 @@ def test_unpaired_unicode_surrogates_fail_closed_before_batch_side_effects(raw):
     shield = AgentShield(ToolPolicy(read_only_tools={"lookup"}))
     with pytest.raises(MalformedToolCalls):
         dispatch_chat_tool_calls(
-            shield, {"lookup": lambda text: executions.append(text)},
+            shield, {"lookup": lambda topic: executions.append(topic)},
             [call(identifier="first", name="lookup", args='{"topic":"safe"}'),
              call(identifier="bad", name="lookup", args=raw)],
         )
