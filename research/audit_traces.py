@@ -16,6 +16,17 @@ from research.paired_analysis import load_records
 OFFICIAL_CHECKER = "agentdojo.TaskSuite.run_task_with_pipeline"
 
 
+def _reject_duplicate_keys(pairs):
+    """Refuse ambiguous JSON metadata rather than trusting the last duplicate."""
+    obj = {}
+    for key, value in pairs:
+        if key in obj:
+            raise ValueError("duplicate JSON object key")
+        obj[key] = value
+    return obj
+
+
+
 def audit_traces(results: Path) -> dict:
     results = Path(results)
     root = results.parent.resolve()
@@ -41,7 +52,8 @@ def audit_traces(results: Path) -> dict:
             failures.append(f"{label}: trace file missing")
             continue
         try:
-            trace = json.loads(path.read_text(encoding="utf-8"))
+            trace = json.loads(path.read_text(encoding="utf-8"),
+                               object_pairs_hook=_reject_duplicate_keys)
         except (OSError, ValueError):
             failures.append(f"{label}: invalid trace JSON")
             continue
