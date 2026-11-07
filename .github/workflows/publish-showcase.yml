@@ -8,6 +8,7 @@ on:
       - public-demo/**
       - scripts/verify_public_demo.py
       - scripts/test_public_demo.mjs
+      - scripts/test_public_demo_browser.py
       - .github/workflows/publish-showcase.yml
   pull_request:
     paths:
@@ -29,7 +30,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,8 +43,22 @@ jobs:
           python-version: '3.12'
       - name: Verify static demo and JavaScript syntax
         run: python scripts/verify_public_demo.py
-      - name: Smoke test guard modes and feedback URL with simulated DOM
+      - name: Smoke test all five stages with deterministic DOM
         run: node scripts/test_public_demo.mjs
+      - name: Install isolated Chromium browser test
+        run: |
+          python -m pip install "playwright==1.57.0"
+          python -m playwright install --with-deps chromium
+      - name: Execute five-stage browser acceptance
+        run: python scripts/test_public_demo_browser.py
+      - name: Upload interactive acceptance screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentshield-browser-acceptance
+          path: data/ui-acceptance/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Prepare no-Jekyll static site
         run: |
           touch public-demo/.nojekyll
