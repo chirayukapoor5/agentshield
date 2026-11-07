@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07121b">
+  <meta name="description" content="Try AgentShield: an open-source Python tool authorization guard for AI agents. Compare protected and unprotected tool calls in a synthetic, offline demo.">
+  <title>AgentShield — Stop unapproved AI agent tool calls</title>
+  <style>
+    :root{color-scheme:dark;--bg:#07121b;--panel:#0e202b;--border:#23404b;--fg:#eaf7f2;--dim:#a1b5bb;--mint:#72f1b7;--amber:#ffc97b;--red:#ff959e}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--fg)}
+    body:before{content:"";position:absolute;top:-260px;right:-150px;width:700px;height:700px;background:radial-gradient(circle,#2bb68a25,transparent 67%);pointer-events:none}
+    a{color:var(--mint)}button,input,select,textarea{font:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--mint);outline-offset:3px}
+    .wrap{max-width:1160px;margin:auto;padding:0 25px}.nav{border-bottom:1px solid #23404b;display:flex;align-items:center;justify-content:space-between;min-height:75px;gap:16px}.brand{text-decoration:none;color:var(--fg);font-size:20px;letter-spacing:.035em;font-weight:900}.brand b{color:var(--mint)}.navlinks{display:flex;gap:24px;flex-wrap:wrap}.navlinks a{font-size:13px;text-decoration:none;color:var(--dim)}.navlinks a:hover{color:var(--mint)}
+    .hero{display:grid;grid-template-columns:1.1fr .9fr;align-items:center;gap:45px;padding:84px 0 92px}.eyebrow{font-size:12px;color:var(--mint);font-weight:800;letter-spacing:.16em;text-transform:uppercase}.hero h1{font-size:clamp(42px,5.2vw,69px);letter-spacing:-.06em;line-height:1.07;margin:14px 0 22px}.gradient{background:linear-gradient(95deg,#61e9ae,#b0ffdb);-webkit-background-clip:text;background-clip:text;color:transparent}.intro{color:#aec2c6;font-size:18px;max-width:580px}.actions{display:flex;flex-wrap:wrap;gap:10px;margin:28px 0 14px}.btn{border:1px solid #36584e;display:inline-flex;align-items:center;justify-content:center;min-height:45px;padding:10px 16px;border-radius:10px;background:#142a32;color:var(--fg);font-size:13px;font-weight:750;text-decoration:none}.btn.primary{background:var(--mint);color:#09261d;border-color:var(--mint)}.btn:hover{filter:brightness(1.12)}.tiny{font-size:12px;color:var(--dim)}.hero-card{border:1px solid #356453;border-radius:24px;padding:28px;background:linear-gradient(145deg,#183e36,#0d202c);box-shadow:0 25px 90px #06100a50}.hero-card .headline{font-weight:800;font-size:13px;color:var(--mint);letter-spacing:.09em}.hero-card .flowrow{display:flex;align-items:center;justify-content:space-between;padding:17px 0;border-bottom:1px solid #34574e}.hero-card .flowrow:last-child{border:0}.pill{border:1px solid #375750;border-radius:30px;padding:3px 10px;color:var(--mint);font-size:11px;font-weight:800}.pill.red{border-color:#79545a;color:var(--red)}.pill.grey{color:var(--dim);border-color:#53656a}
+    section{scroll-margin-top:25px;padding:40px 0 58px;border-top:1px solid #263b44}.sectionhead h2{font-size:clamp(28px,3.8vw,43px);line-height:1.18;letter-spacing:-.045em;margin:7px 0}.sectionhead p{color:var(--dim);max-width:750px}
+    .demo{display:grid;grid-template-columns:305px 1fr;gap:18px;margin-top:26px}.left,.right,.card{background:var(--panel);border:1px solid var(--border);border-radius:16px}.left{overflow:hidden}.left h3{margin:0;padding:18px 18px 12px;font-size:12px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}.scenario{width:100%;background:transparent;color:var(--fg);border:0;border-top:1px solid #1c3640;text-align:left;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px}.scenario strong{display:block;font-size:14px}.scenario small{display:block;color:var(--dim);font-size:12px;margin-top:2px}.scenario.active{background:#1c4036;border-left:4px solid var(--mint);padding-left:14px}.scenario:hover{background:#1c3940}.right{padding:22px}.mode{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.mode button{flex:1;min-width:155px;border:1px solid #3a575d;background:#10232b;color:var(--dim);border-radius:9px;padding:12px;font-weight:750}.mode button.selected.safe{background:var(--mint);color:#06241a;border-color:var(--mint)}.mode button.selected.unsafe{background:#ab5962;color:white;border-color:#ab5962}.terminal{border:1px solid #29444f;background:#06101a;border-radius:12px;overflow:hidden;min-height:266px}.terminalhead{padding:11px 17px;background:#102530;font:12px ui-monospace,monospace;color:#a7bfca;border-bottom:1px solid #2a4550}.terminal pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:0;padding:20px;font:13px/1.75 ui-monospace,SFMono-Regular,Consolas,monospace;color:#d2e3e8}.status{font-weight:800;font-size:16px;color:var(--mint);margin:15px 0 0}.status.warn{color:var(--red)}.status.idle{color:var(--dim)}.detail{color:var(--dim);font-size:13px;min-height:43px}.demo-controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}.footnote{margin:17px 0 0;color:#afbdc4;font-size:12px}
+    .guide{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:25px}.guide .card{padding:21px}.guide .num{color:var(--mint);font:900 27px ui-monospace,monospace}.guide h3{margin:8px 0;font-size:18px}.guide p{font-size:13px;color:var(--dim);margin:0}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:25px;margin-top:20px}.code{background:#06101a;border:1px solid #284750;border-radius:13px;padding:22px;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.8 ui-monospace,monospace;color:#d0e7df}.feature{border-top:1px solid #31514e;padding:15px 0}.feature strong{display:block}.feature span{font-size:13px;color:var(--dim)}
+    .feedback{background:linear-gradient(130deg,#163a31,#0e2830);border:1px solid #356552;border-radius:18px;padding:28px;margin-top:20px}.feedback-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.field{display:flex;flex-direction:column;gap:7px}.field label{font-size:13px;font-weight:700}.field input,.field select,.field textarea{background:#081a24;color:var(--fg);border:1px solid #40645f;padding:11px 13px;border-radius:8px;width:100%;min-height:44px}.field textarea{min-height:88px;resize:vertical}.full{grid-column:1/-1}.muted{color:var(--dim)}.privacy{font-size:12px;color:#bfd0c9}.footer{padding:25px 0 50px;font-size:12px;color:var(--dim);display:flex;flex-wrap:wrap;justify-content:space-between;gap:18px;border-top:1px solid var(--border)}
+    @media(max-width:830px){.hero{grid-template-columns:1fr;padding:55px 0}.demo{grid-template-columns:1fr}.guide,.split{grid-template-columns:1fr}.hero-card{max-width:510px}.navlinks{gap:12px}}
+    @media(max-width:540px){.wrap{padding:0 17px}.hero h1{font-size:42px}.feedback-grid{grid-template-columns:1fr}.navlinks a:first-child{display:none}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  </style>
+</head>
+<body>
+  <header class="wrap nav">
+    <a class="brand" href="#top" aria-label="AgentShield home">◇ AGENT<b>SHIELD</b></a>
+    <nav class="navlinks" aria-label="Main">
+      <a href="#demo">Try demo</a><a href="#walkthrough">Walkthrough</a><a href="#feedback">Feedback</a>
+      <a href="https://github.com/chirayukapoor5/agentshield" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+    </nav>
+  </header>
+  <main class="wrap" id="top">
+    <div class="hero">
+      <div>
+        <div class="eyebrow">Open-source Python SDK · interactive product preview</div>
+        <h1>Stop unapproved agent actions <span class="gradient">before execution.</span></h1>
+        <p class="intro">AI agents can read untrusted content and request powerful tools. AgentShield lets developers put explicit authorization and approval rules between an agent's tool request and their Python handlers.</p>
+        <div class="actions"><a class="btn primary" href="#demo">▶ Try the 60-second demo</a><a class="btn" href="#feedback">I build AI agents — give feedback ↗</a></div>
+        <p class="tiny">No account, API key, or live model needed for this demo. All scenarios are synthetic. This is not a penetration test or a measured attack-success rate.</p>
+      </div>
+      <div class="hero-card" aria-label="Sample policy outcomes">
+        <div class="headline">AGENTSHIELD / POLICY GATE</div>
+        <div class="flowrow"><span>read_document</span><span class="pill">ALLOW</span></div>
+        <div class="flowrow"><span>send_email (no approval)</span><span class="pill red">DENY</span></div>
+        <div class="flowrow"><span>delete_file (no approval)</span><span class="pill red">DENY</span></div>
+        <div class="flowrow"><span>fetch_url (unlisted host)</span><span class="pill red">DENY</span></div>
+        <div class="flowrow"><span>Unwrapped tool path</span><span class="pill grey">OUTSIDE BOUNDARY</span></div>
+        <p class="tiny">Illustrative outcomes from explicit SDK policy rules. The model itself is not evaluated here.</p>
+      </div>
+    </div>
+    <section id="demo" aria-labelledby="demo-title">
+      <div class="sectionhead"><div class="eyebrow">Hands-on demo</div><h2 id="demo-title">The same tool request. Two enforcement paths.</h2><p>Choose a tool action, switch the guard off and on, then run the replay. The unguarded path illustrates the absence of an AgentShield wrapper—it does not execute any tools.</p></div>
+      <div class="demo">
+        <aside class="left" aria-label="Example tool calls">
+          <h3>Choose a tool request</h3>
+          <div id="scenarios"></div>
+        </aside>
+        <div class="right">
+          <div class="mode" role="group" aria-label="Guard mode">
+            <button id="without" type="button" aria-pressed="false">Without AgentShield</button>
+            <button id="with" type="button" aria-pressed="true">With AgentShield</button>
+          </div>
+          <div class="terminal" role="region" aria-label="Simulation output">
+            <div class="terminalhead">agent-runtime / simulated-trace.json</div>
+            <pre id="trace" aria-live="polite"></pre>
+          </div>
+          <p class="status idle" id="decision" role="status">Ready to replay</p>
+          <p class="detail" id="explanation"></p>
+          <div class="demo-controls">
+            <button class="btn primary" id="run" type="button">▶ Run simulated tool request</button>
+            <button class="btn" id="guided" type="button">▶ Guided walkthrough</button>
+          </div>
+          <p class="footnote">No network, Python handler or LLM call runs when you click the demo controls. Guarded behavior is based on the SDK's documented policy logic; unguarded outcomes depend on the host application.</p>
+        </div>
+      </div>
+    </section>
+    <section id="walkthrough" aria-labelledby="walk-title">
+      <div class="sectionhead"><div class="eyebrow">Quick walkthrough</div><h2 id="walk-title">Understand it in 60 seconds.</h2></div>
+      <div class="guide">
+        <div class="card"><span class="num">01</span><h3>Select “Send email”</h3><p>Imagine an untrusted document telling the agent to send a message the user never authorized. Pick that tool request in the library.</p></div>
+        <div class="card"><span class="num">02</span><h3>Compare guard off and on</h3><p>Without registration, AgentShield cannot enforce policy. With the wrapper, the approval-gated tool is denied before the handler is called.</p></div>
+        <div class="card"><span class="num">03</span><h3>Try the SDK and tell us what's missing</h3><p>Inspect the Python example, then share your framework and first tool-authorization requirement so the product can be validated against real workflows.</p></div>
+      </div>
+    </section>
+    <section id="integration" aria-labelledby="sdk-title">
+      <div class="sectionhead"><div class="eyebrow">Developer integration</div><h2 id="sdk-title">Wrap the functions your agent can call.</h2><p>The returned guarded registry—not the original handlers—must be connected to the agent. Direct calls to unwrapped handlers are outside this protection boundary.</p></div>
+      <div class="split">
+        <div>
+          <div class="feature"><strong>Fail-closed tools</strong><span>Unlisted functions are denied before execution.</span></div>
+          <div class="feature"><strong>Approval-required actions</strong><span>State-changing tools can require an explicit approval callback.</span></div>
+          <div class="feature"><strong>Explicit destination rules</strong><span>Selected URL arguments must match configured HTTPS hosts; this is not a network sandbox.</span></div>
+          <div class="feature"><strong>Tested model-tool interface</strong><span>An OpenAI-compatible dispatcher and bounded model loop are available in the Python SDK.</span></div>
+          <a class="btn" href="https://github.com/chirayukapoor5/agentshield/tree/research/multilingual-injection-2026/sdk" target="_blank" rel="noopener noreferrer">Review implementation and tests ↗</a>
+        </div>
+        <div>
+          <div class="code" id="snippet">from agentshield_guard import AgentShield, ToolPolicy
+
+policy = ToolPolicy(
+    read_only_tools={"read_document"},
+    approval_tools={"send_email"},
+)
+shield = AgentShield(policy)
+
+secured = shield.wrap_registry({
+    "read_document": read_document,
+    "send_email": send_email,
+})
+
+# Register "secured" with the agent,
+# not your original raw functions.</div>
+          <button class="btn" id="copy-code" type="button">Copy Python example</button>
+          <p class="tiny">To run the full offline demonstration: clone the research branch, install <code>./sdk</code>, then run <code>sdk/examples/chat_tool_calls.py</code>.</p>
+        </div>
+      </div>
+    </section>
+    <section id="feedback" aria-labelledby="feedback-title">
+      <div class="sectionhead"><div class="eyebrow">Help shape the product</div><h2 id="feedback-title">Would you actually use this?</h2><p>We're testing whether an explicit tool-authorization layer solves a real developer problem. Your specific integration need is more useful than a generic “looks cool.”</p></div>
+      <div class="feedback">
+        <form id="feedback-form">
+          <div class="feedback-grid">
+            <div class="field"><label for="framework">What do you build with?</label><select id="framework" required><option value="">Choose a framework</option><option>LangChain / LangGraph</option><option>OpenAI API / Agents SDK</option><option>CrewAI</option><option>AutoGen</option><option>Custom Python agent</option><option>Other / evaluating</option></select></div>
+            <div class="field"><label for="interest">Would you test this SDK?</label><select id="interest" required><option value="">Choose an answer</option><option>Yes, this month</option><option>Maybe, after an integration example</option><option>Not currently</option></select></div>
+            <div class="field full"><label for="problem">Which risky tool action or integration obstacle matters most?</label><textarea id="problem" required minlength="10" maxlength="800" placeholder="Example: our LangGraph assistant can send emails. We need per-user approval before sending." aria-describedby="privacy"></textarea></div>
+          </div>
+          <div class="actions"><button class="btn primary" type="submit">Open feedback on GitHub ↗</button><a class="btn" href="https://github.com/chirayukapoor5/agentshield/issues" target="_blank" rel="noopener noreferrer">View public developer requests</a></div>
+          <p class="privacy" id="privacy">Submitting opens a prefilled GitHub issue in a new tab; you must review and click Submit on GitHub. No feedback is collected by this static demo, and no message is submitted automatically. A GitHub account is required. Don't include secrets or private customer data.</p>
+        </form>
+        <p id="feedback-status" class="tiny" role="status"></p>
+      </div>
+    </section>
+    <section id="evidence">
+      <div class="sectionhead"><div class="eyebrow">Verified engineering, limited claims</div><h2>What is tested—and what isn't.</h2><p>AgentShield has automated SDK and research infrastructure checks, but does not yet have a published, independent, multilingual AgentDojo defense-efficacy result. A deterministic browser replay is not a real-model attack.</p></div>
+      <div class="actions">
+        <a class="btn" href="https://github.com/chirayukapoor5/agentshield/actions" target="_blank" rel="noopener noreferrer">Inspect current CI runs ↗</a>
+        <a class="btn" href="https://github.com/chirayukapoor5/agentshield/blob/research/multilingual-injection-2026/docs/RESULTS_SUMMARY.md" target="_blank" rel="noopener noreferrer">Research evidence / limitations ↗</a>
+      </div>
+    </section>
+  </main>
+  <footer class="wrap footer"><span>◇ AgentShield · public synthetic product demo · v0.1</span><span>Open source · No real tool execution · No protection without wrapping handlers</span></footer>
+  <script>
+    "use strict";
+    const scenarios=[
+      {id:"read",name:"Read a document",detail:"User-authorized read",tool:"read_document",arguments:{id:"sample-1"},allow:true,reason:"allowlisted",explanation:"The registered handler is an explicitly allowed read-only tool."},
+      {id:"email",name:"Send an email",detail:"No user approval",tool:"send_email",arguments:{to:"demo@example.org",body:"Synthetic example"},allow:false,reason:"approval_not_configured",explanation:"The email tool requires approval and no approval callback was configured. The guarded handler is not called."},
+      {id:"delete",name:"Delete a file",detail:"Action not permitted",tool:"delete_file",arguments:{path:"sample.txt"},allow:false,reason:"tool_not_allowlisted",explanation:"An unregistered file-delete tool is not on either allowlist."},
+      {id:"fetch",name:"Fetch an external URL",detail:"Unapproved destination",tool:"fetch_url",arguments:{url:"https://unlisted.example.org/demo"},allow:false,reason:"destination_not_allowlisted",explanation:"The hostname is not in the configured exact HTTPS allowlist."},
+      {id:"shell",name:"Execute a shell command",detail:"Unknown function",tool:"execute_shell",arguments:{command:"echo demo"},allow:false,reason:"tool_not_allowlisted",explanation:"No shell execution function is authorized by the policy."}
+    ];
+    const $=id=>document.getElementById(id);
+    let selected=1,protectedMode=true;
+    const menu=$("scenarios"),trace=$("trace"),decision=$("decision"),explanation=$("explanation");
+    function renderMenu(){menu.innerHTML="";scenarios.forEach((s,i)=>{const b=document.createElement("button");b.className="scenario"+(i===selected?" active":"");b.type="button";b.setAttribute("aria-pressed",String(i===selected));const strong=document.createElement("strong");strong.textContent=s.name;const small=document.createElement("small");small.textContent=s.detail;const text=document.createElement("span");text.append(strong,small);const mark=document.createElement("span");mark.textContent=s.allow?"✓":"×";mark.style.color=s.allow?"var(--mint)":"var(--red)";b.append(text,mark);b.addEventListener("click",()=>{selected=i;renderMenu();resetTrace()});menu.appendChild(b)})}
+    function renderMode(){$("without").className=protectedMode?"":"selected unsafe";$("with").className=protectedMode?"selected safe":"";$("without").setAttribute("aria-pressed",String(!protectedMode));$("with").setAttribute("aria-pressed",String(protectedMode))}
+    function resetTrace(){const s=scenarios[selected];trace.textContent=JSON.stringify({mode:protectedMode?"guarded":"unwrapped",tool_request:{name:s.tool,arguments:s.arguments},status:"ready"},null,2);decision.textContent="Ready to replay";decision.className="status idle";explanation.textContent=""}
+    function replay(){const s=scenarios[selected];const status=protectedMode?(s.allow?"allowed":"denied"):"outside_policy_boundary";trace.textContent=JSON.stringify({source:"synthetic_browser_replay",mode:protectedMode?"AgentShield wrapped":"unwrapped app handler",tool_request:{name:s.tool,arguments:s.arguments},policy_enforced:protectedMode,decision:status,reason:protectedMode?s.reason:"no_wrapper_registered",handler_executed:false},null,2);decision.textContent=protectedMode?(s.allow?"✓ ALLOWED BY POLICY":"× DENIED BEFORE EXECUTION"):"⚠ NO AGENTSHIELD ENFORCEMENT";decision.className="status"+(status==="denied"||status==="outside_policy_boundary"?" warn":"");explanation.textContent=protectedMode?s.explanation:"The request bypasses AgentShield. The host application's own logic would determine whether the raw handler executes; this demo does not execute it."}
+    $("without").addEventListener("click",()=>{protectedMode=false;renderMode();resetTrace()});$("with").addEventListener("click",()=>{protectedMode=true;renderMode();resetTrace()});$("run").addEventListener("click",replay);
+    $("guided").addEventListener("click",()=>{selected=1;protectedMode=false;renderMenu();renderMode();replay();$("guided").textContent="Step 1/2: Unguarded";window.setTimeout(()=>{protectedMode=true;renderMode();replay();$("guided").textContent="Step 2/2: Guard blocks email";window.setTimeout(()=>{$("guided").textContent="▶ Guided walkthrough"},2600)},2600)});
+    $("copy-code").addEventListener("click",async()=>{try{await navigator.clipboard.writeText($("snippet").textContent);$("copy-code").textContent="✓ Copied"}catch(_){$("copy-code").textContent="Select code to copy"}});
+    $("feedback-form").addEventListener("submit",event=>{event.preventDefault();const framework=$("framework").value,interest=$("interest").value,problem=$("problem").value.trim();if(!framework||!interest||problem.length<10)return;const title="Developer feedback: "+framework;const body=["## Agent framework",framework,"","## Would test the SDK? ",interest,"","## Risky tool / integration blocker",problem,"","---","Submitted from the public AgentShield product demo. Synthetic example only; do not post secrets."].join("\n");const url="https://github.com/chirayukapoor5/agentshield/issues/new?"+new URLSearchParams({title,body}).toString();$("feedback-status").textContent="Opening GitHub. Review the prefilled issue and press Submit there to send it.";window.open(url,"_blank","noopener,noreferrer")});
+    renderMenu();renderMode();resetTrace();
+  </script>
+</body>
+</html>
