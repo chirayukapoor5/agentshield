@@ -92,6 +92,26 @@ def _valid_dns_name(host: str) -> bool:
         return True
 
 
+def _has_invalid_unicode(value: Any) -> bool:
+    """Reject unpaired UTF-16 surrogate values, including nested JSON keys.
+
+    Such escaped sequences are accepted by Python json.loads but cannot be
+    encoded into well-formed UTF-8 for downstream tool APIs.
+    """
+    pending = [value]
+    while pending:
+        current = pending.pop()
+        if isinstance(current, str):
+            if any(0xD800 <= ord(char) <= 0xDFFF for char in current):
+                return True
+        elif isinstance(current, dict):
+            pending.extend(current.keys())
+            pending.extend(current.values())
+        elif isinstance(current, list):
+            pending.extend(current)
+    return False
+
+
 def _is_authorized_url(value: Any, hosts: frozenset[str]) -> bool:
     if not isinstance(value, str) or any(c.isspace() or ord(c) < 32 for c in value):
         return False
@@ -159,6 +179,8 @@ class AgentShield:
                 execution_args = json.loads(json.dumps(arguments, allow_nan=False))
             except (TypeError, ValueError, RecursionError) as exc:
                 raise DeniedToolCall("invalid_tool_arguments") from exc
+            if _has_invalid_unicode(execution_args):
+                raise DeniedToolCall("invalid_tool_arguments")
             decision = self.decide(name, execution_args)
             if self.audit is not None:
                 try:
