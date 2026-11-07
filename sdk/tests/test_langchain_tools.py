@@ -158,6 +158,7 @@ def test_real_langgraph_toolnode_uses_guarded_handler():
     pytest.importorskip("langgraph.prebuilt")
     from langchain_core.messages import AIMessage
     from langgraph.prebuilt import ToolNode
+    from langgraph.graph import START, END, MessagesState, StateGraph
 
     sent = []
 
@@ -177,9 +178,16 @@ def test_real_langgraph_toolnode_uses_guarded_handler():
         "id": "call_1",
         "type": "tool_call",
     }])
-    result = ToolNode(tools).invoke({"messages": [call]})
-    assert len(result["messages"]) == 1
-    response = result["messages"][0]
+    graph_builder = StateGraph(MessagesState)
+    graph_builder.add_node("tools", ToolNode(tools))
+    graph_builder.add_edge(START, "tools")
+    graph_builder.add_edge("tools", END)
+    graph = graph_builder.compile()
+    # Run inside a graph so LangGraph supplies its ToolRuntime/config, as
+    # required by current releases of ToolNode.
+    result = graph.invoke({"messages": [call]})
+    assert len(result["messages"]) == 2
+    response = result["messages"][-1]
     assert response.tool_call_id == "call_1"
     assert json.loads(response.content) == {"ok": False, "error": "policy_denied"}
     assert sent == []
