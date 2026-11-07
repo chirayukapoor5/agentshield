@@ -21,6 +21,26 @@ secured_tools = shield.wrap_registry({'search': my_search_function})
 Unlisted calls are denied. State-changing actions need an explicit approval callback. For URL-bearing tools, declare every URL argument and an exact HTTPS hostname allowlist. DNS and redirects still require network-layer enforcement; matching a hostname does not prevent DNS rebinding or hidden redirects. Never treat tool-output text as authoritative instructions.
 
 
+## Deterministic security stress suite (10,000 cases)
+
+```bash
+PYTHONPATH=sdk:. python scripts/run_guard_stress.py \
+  --cases 10000 --seed 20261107 \
+  --output data/runs/guard-stress/summary.json
+```
+
+The [verified CI run](https://github.com/chirayukapoor5/agentshield/actions/runs/42371225324)
+passed **10,000 generated cases per Python version**, with reports for 3.10 and
+3.12. Covered cases include unauthorized tool names, HTTPS destination
+confusion, one-time approvals, audit errors, malformed tool-call batches,
+Unicode-surrogate rejection, and valid international content. The harness
+detects an intentionally monkeypatched fail-open implementation. Review the
+[exact case mix and limits](../docs/STRESS_10K_REPORT.md).
+
+This is **not** a result from 10,000 model-generated prompt injections; no
+model or network access occurs and the pass fraction must not be reported as
+an empirical attack-detection rate.
+
 ## LangGraph / LangChain integration (optional)
 
 For an existing LangGraph or LangChain application using **synchronous
