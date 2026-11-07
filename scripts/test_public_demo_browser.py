@@ -41,8 +41,12 @@ def main() -> None:
         page.wait_for_function("document.querySelectorAll('#scenarios button').length===5")
         assert page.locator("#stage-progress").inner_text() == "Stage 1 of 5"
         assert page.locator("#evidence-scorecard").is_visible()
-        assert "79 / 79" in page.locator("#evidence-scorecard").inner_text()
-        assert "N/A" in page.locator("#evidence-scorecard").inner_text()
+        scorecard = page.locator("#evidence-scorecard").inner_text()
+        assert "85 / 85" in scorecard
+        assert "10,000 / 10,000" in scorecard
+        assert "N/A" in scorecard
+        assert "No real LLM calls" in scorecard
+        assert page.locator("#evidence-scorecard a[href*='STRESS_10K_REPORT.md']").count() == 1
 
         # Read.
         page.click("#run")
