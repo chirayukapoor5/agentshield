@@ -18,6 +18,12 @@ security efficacy estimates.
   that real model, and no email handler executed. See
   [verified run #42369186158](https://github.com/chirayukapoor5/agentshield/actions/runs/42369186158)
   and `docs/LIVE_MODEL_CANARY_2026-11-07.md`. **Not an attack-success-rate result.**
+- **10,000/10,000 passing offline authorization stress cases** on each of Python
+  3.10 and 3.12, including unlisted tools, URL edge cases, approval/audit,
+  malformed JSON/Unicode, and valid multilingual inputs. The source, seed,
+  exact categories, and CI report artifacts are documented in
+  [STRESS_10K_REPORT.md](STRESS_10K_REPORT.md). This is an SDK contract
+  regression suite, **not** AgentDojo ASR or a measured defense rate.
 - Optional real LangChain/LangGraph `ToolNode` adapter, tested against the
   actual framework with synthetic messages and zero model requests; unlike
   a browser simulation, this exercises live Python framework execution.
