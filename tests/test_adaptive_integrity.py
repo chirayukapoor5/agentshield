@@ -77,3 +77,33 @@ def test_existing_log_cannot_be_overwritten_without_resume(tmp_path):
     run(tmp_path)
     with pytest.raises(ValueError, match="overwrite"):
         run(tmp_path, resume=False)
+
+
+def test_failed_paid_proposal_consumes_attempt_and_blocks_resume(tmp_path):
+    def failed(*_):
+        raise RuntimeError("attacker model returned 503")
+    with pytest.raises(RuntimeError, match="503"):
+        run(tmp_path, propose=failed)
+    rows = [json.loads(line) for line in
+            (tmp_path / "attempts.jsonl").read_text().splitlines()]
+    assert len(rows) == 1
+    assert rows[0]["attempt"] == 1
+    assert rows[0]["stage"] == "proposal"
+    assert rows[0]["status"] == "unscorable"
+    assert "attacker model returned" not in json.dumps(rows)
+    with pytest.raises(RuntimeError, match="manual review"):
+        run(tmp_path)
+
+
+def test_invalid_proposal_counts_against_budget(tmp_path):
+    with pytest.raises(ValueError, match="code-mix"):
+        run(tmp_path, propose=lambda *_: {
+            "text": "synthetic", "language": "en", "script": "Latn",
+            "code_mix_ratio": float("nan"), "strategy": "fixture"})
+    rows = [json.loads(line) for line in
+            (tmp_path / "attempts.jsonl").read_text().splitlines()]
+    assert len(rows) == 1
+    assert rows[0]["stage"] == "proposal_validation"
+    assert rows[0]["status"] == "unscorable"
+    with pytest.raises(RuntimeError, match="manual review"):
+        run(tmp_path)
