@@ -29,7 +29,7 @@ PYTHONPATH=sdk:. python scripts/run_guard_stress.py \
   --output data/runs/guard-stress/summary.json
 ```
 
-The [verified CI run](https://github.com/chirayukapoor5/agentshield/actions/runs/42371225324)
+The [verified CI run](https://github.com/chirayukapoor5/agentshield/actions/runs/42371796465)
 passed **10,000 generated cases per Python version**, with reports for 3.10 and
 3.12. Covered cases include unauthorized tool names, HTTPS destination
 confusion, one-time approvals, audit errors, malformed tool-call batches,
