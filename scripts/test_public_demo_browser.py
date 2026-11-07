@@ -42,7 +42,7 @@ def main() -> None:
         assert page.locator("#stage-progress").inner_text() == "Stage 1 of 5"
         assert page.locator("#evidence-scorecard").is_visible()
         scorecard = page.locator("#evidence-scorecard").inner_text()
-        assert "85 / 85" in scorecard
+        assert "90 / 90" in scorecard
         assert "10,000 / 10,000" in scorecard
         assert "N/A" in scorecard
         assert "No real LLM calls" in scorecard
