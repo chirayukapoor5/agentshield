@@ -163,3 +163,30 @@ def test_non_json_arguments_deny_before_handler():
     with pytest.raises(DeniedToolCall, match="invalid_tool_arguments"):
         shield.guard("lookup", lambda value: seen.append(value))(value=object())
     assert seen == []
+
+
+
+@pytest.mark.parametrize("value", [
+    "\ud800",
+    {"text": "\udfff"},
+    {"nested": [{"bad\ud800key": "synthetic"}]},
+    ["valid", {"text": "\ud800"}],
+])
+def test_core_guard_rejects_lone_surrogates_before_handler(value):
+    executed = []
+    guarded = AgentShield(
+        ToolPolicy(read_only_tools={"lookup"})
+    ).guard("lookup", lambda payload: executed.append(payload))
+    with pytest.raises(DeniedToolCall, match="invalid_tool_arguments"):
+        guarded(payload=value)
+    assert executed == []
+
+
+def test_core_guard_accepts_valid_international_unicode_and_emoji():
+    executed = []
+    payload = {"text": "English 日本語 العربية 🛡️", "nested": ["🌐", "é", "e\u0301"]}
+    guarded = AgentShield(
+        ToolPolicy(read_only_tools={"lookup"})
+    ).guard("lookup", lambda payload: executed.append(payload))
+    guarded(payload=payload)
+    assert executed == [payload]
