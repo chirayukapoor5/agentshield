@@ -18,6 +18,17 @@
     .guide{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:25px}.guide .card{padding:21px}.guide .num{color:var(--mint);font:900 27px ui-monospace,monospace}.guide h3{margin:8px 0;font-size:18px}.guide p{font-size:13px;color:var(--dim);margin:0}
     .split{display:grid;grid-template-columns:1fr 1fr;gap:25px;margin-top:20px}.code{background:#06101a;border:1px solid #284750;border-radius:13px;padding:22px;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.8 ui-monospace,monospace;color:#d0e7df}.feature{border-top:1px solid #31514e;padding:15px 0}.feature strong{display:block}.feature span{font-size:13px;color:var(--dim)}
     .feedback{background:linear-gradient(130deg,#163a31,#0e2830);border:1px solid #356552;border-radius:18px;padding:28px;margin-top:20px}.feedback-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.field{display:flex;flex-direction:column;gap:7px}.field label{font-size:13px;font-weight:700}.field input,.field select,.field textarea{background:#081a24;color:var(--fg);border:1px solid #40645f;padding:11px 13px;border-radius:8px;width:100%;min-height:44px}.field textarea{min-height:88px;resize:vertical}.full{grid-column:1/-1}.muted{color:var(--dim)}.privacy{font-size:12px;color:#bfd0c9}.footer{padding:25px 0 50px;font-size:12px;color:var(--dim);display:flex;flex-wrap:wrap;justify-content:space-between;gap:18px;border-top:1px solid var(--border)}
+    .sandbox-approval{background:#122c35;border:1px solid #375961;border-radius:11px;padding:15px;margin:0 0 17px}
+    .sandbox-approval label{display:block;font-size:13px;font-weight:750;margin-bottom:7px}
+    .sandbox-approval select{width:100%;background:#071a24;color:var(--fg);border:1px solid #52716d;border-radius:8px;padding:11px;min-height:44px}
+    .sandbox-approval p{margin:8px 0 0;font-size:12px;color:var(--dim)}
+    .sandbox-results{margin-top:19px;border:1px solid #365952;border-radius:12px;padding:17px;background:#0b2022}
+    .sandbox-results h3{font-size:15px;margin:0 0 8px}
+    .sandbox-results .summary{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--dim)}
+    .sandbox-results .summary strong{font-size:17px;color:var(--mint)}
+    #sandbox-output{color:#cdebe0;font-size:12px;min-height:20px;margin:12px 0}
+    #audit{font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere;background:#07151d;padding:12px;border-radius:8px;max-height:160px;overflow:auto}
+    .sandbox-notice{font-size:12px;color:#afcec3}
     @media(max-width:830px){.hero{grid-template-columns:1fr;padding:55px 0}.demo{grid-template-columns:1fr}.guide,.split{grid-template-columns:1fr}.hero-card{max-width:510px}.navlinks{gap:12px}}
     @media(max-width:540px){.wrap{padding:0 17px}.hero h1{font-size:42px}.feedback-grid{grid-template-columns:1fr}.navlinks a:first-child{display:none}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
@@ -51,16 +62,25 @@
       </div>
     </div>
     <section id="demo" aria-labelledby="demo-title">
-      <div class="sectionhead"><div class="eyebrow">Hands-on demo</div><h2 id="demo-title">The same tool request. Two enforcement paths.</h2><p>Choose a tool action, switch the guard off and on, then run the replay. The unguarded path illustrates the absence of an AgentShield wrapper—it does not execute any tools.</p></div>
+      <div class="sectionhead"><div class="eyebrow">Hands-on demo</div><h2 id="demo-title">Try a tool. Approve it. See the effect.</h2><p>Choose a tool action and run an isolated in-memory handler. Approve a synthetic email, then deny it with the guard. Nothing is sent over the network.</p></div>
       <div class="demo">
         <aside class="left" aria-label="Example tool calls">
           <h3>Choose a tool request</h3>
           <div id="scenarios"></div>
         </aside>
-        <div class="right">
+        <div class="right" data-demo-version="sandbox-approval-v2">
           <div class="mode" role="group" aria-label="Guard mode">
             <button id="without" type="button" aria-pressed="false">Without AgentShield</button>
             <button id="with" type="button" aria-pressed="true">With AgentShield</button>
+          </div>
+          <div class="sandbox-approval" id="approval-panel">
+            <label for="approval">Email approval callback (one synthetic request)</label>
+            <select id="approval">
+              <option value="none">Not configured — deny</option>
+              <option value="deny">Ask reviewer → deny</option>
+              <option value="approve">Ask reviewer → approve one sandbox email</option>
+            </select>
+            <p id="approval-help">Choose approve to authorize one in-memory email handler. Nothing is delivered.</p>
           </div>
           <div class="terminal" role="region" aria-label="Simulation output">
             <div class="terminalhead">agent-runtime / simulated-trace.json</div>
@@ -69,10 +89,22 @@
           <p class="status idle" id="decision" role="status">Ready to replay</p>
           <p class="detail" id="explanation"></p>
           <div class="demo-controls">
-            <button class="btn primary" id="run" type="button">▶ Run simulated tool request</button>
+            <button class="btn primary" id="run" type="button">▶ Execute sandbox tool</button>
             <button class="btn" id="guided" type="button">▶ Guided walkthrough</button>
           </div>
-          <p class="footnote">No network, Python handler or LLM call runs when you click the demo controls. Guarded behavior is based on the SDK's documented policy logic; unguarded outcomes depend on the host application.</p>
+          <div class="sandbox-results" aria-label="Sandbox execution effects">
+            <h3>Actual effects inside this browser sandbox</h3>
+            <div class="summary">
+              <span>Simulated outbox: <strong id="outbox-count">0</strong></span>
+              <span>Document reads: <strong id="read-count">0</strong></span>
+              <span>Sample file: <strong id="file-status">Present</strong></span>
+            </div>
+            <p id="sandbox-output" role="status">No handler executed yet.</p>
+            <details><summary>View local authorization audit log</summary><pre id="audit">[]</pre></details>
+            <button id="reset-sandbox" class="btn" type="button">Reset sandbox state</button>
+            <p class="sandbox-notice">JavaScript fixture handlers update fictional data in memory. They never send email, delete device files, run shell commands, fetch URLs, or invoke the Python SDK. The policy logic mirrors the SDK's documented cases.</p>
+          </div>
+          <p class="footnote">This is a safe product demo, not a live model attack or remote agent service. To guard real agent tools, integrate the Python SDK's wrapped registry.</p>
         </div>
       </div>
     </section>
@@ -80,8 +112,8 @@
       <div class="sectionhead"><div class="eyebrow">Quick walkthrough</div><h2 id="walk-title">Understand it in 60 seconds.</h2></div>
       <div class="guide">
         <div class="card"><span class="num">01</span><h3>Select “Send email”</h3><p>Imagine an untrusted document telling the agent to send a message the user never authorized. Pick that tool request in the library.</p></div>
-        <div class="card"><span class="num">02</span><h3>Compare guard off and on</h3><p>Without registration, AgentShield cannot enforce policy. With the wrapper, the approval-gated tool is denied before the handler is called.</p></div>
-        <div class="card"><span class="num">03</span><h3>Try the SDK and tell us what's missing</h3><p>Inspect the Python example, then share your framework and first tool-authorization requirement so the product can be validated against real workflows.</p></div>
+        <div class="card"><span class="num">02</span><h3>Compare guard off and on</h3><p>Run without the guard to place a fictional email in the outbox. Then run with the guard and no approval: nothing new is recorded.</p></div>
+        <div class="card"><span class="num">03</span><h3>Try the SDK and tell us what's missing</h3><p>Approve one guarded email to see an authorized in-memory send. Reset the sandbox, inspect Python integration, and share your framework.</p></div>
       </div>
     </section>
     <section id="integration" aria-labelledby="sdk-title">
@@ -139,27 +171,6 @@ secured = shield.wrap_registry({
     </section>
   </main>
   <footer class="wrap footer"><span>◇ AgentShield · public synthetic product demo · v0.1</span><span>Open source · No real tool execution · No protection without wrapping handlers</span></footer>
-  <script>
-    "use strict";
-    const scenarios=[
-      {id:"read",name:"Read a document",detail:"User-authorized read",tool:"read_document",arguments:{id:"sample-1"},allow:true,reason:"allowlisted",explanation:"The registered handler is an explicitly allowed read-only tool."},
-      {id:"email",name:"Send an email",detail:"No user approval",tool:"send_email",arguments:{to:"demo@example.org",body:"Synthetic example"},allow:false,reason:"approval_not_configured",explanation:"The email tool requires approval and no approval callback was configured. The guarded handler is not called."},
-      {id:"delete",name:"Delete a file",detail:"Action not permitted",tool:"delete_file",arguments:{path:"sample.txt"},allow:false,reason:"tool_not_allowlisted",explanation:"An unregistered file-delete tool is not on either allowlist."},
-      {id:"fetch",name:"Fetch an external URL",detail:"Unapproved destination",tool:"fetch_url",arguments:{url:"https://unlisted.example.org/demo"},allow:false,reason:"destination_not_allowlisted",explanation:"The hostname is not in the configured exact HTTPS allowlist."},
-      {id:"shell",name:"Execute a shell command",detail:"Unknown function",tool:"execute_shell",arguments:{command:"echo demo"},allow:false,reason:"tool_not_allowlisted",explanation:"No shell execution function is authorized by the policy."}
-    ];
-    const $=id=>document.getElementById(id);
-    let selected=1,protectedMode=true;
-    const menu=$("scenarios"),trace=$("trace"),decision=$("decision"),explanation=$("explanation");
-    function renderMenu(){menu.innerHTML="";scenarios.forEach((s,i)=>{const b=document.createElement("button");b.className="scenario"+(i===selected?" active":"");b.type="button";b.setAttribute("aria-pressed",String(i===selected));const strong=document.createElement("strong");strong.textContent=s.name;const small=document.createElement("small");small.textContent=s.detail;const text=document.createElement("span");text.append(strong,small);const mark=document.createElement("span");mark.textContent=s.allow?"✓":"×";mark.style.color=s.allow?"var(--mint)":"var(--red)";b.append(text,mark);b.addEventListener("click",()=>{selected=i;renderMenu();resetTrace()});menu.appendChild(b)})}
-    function renderMode(){$("without").className=protectedMode?"":"selected unsafe";$("with").className=protectedMode?"selected safe":"";$("without").setAttribute("aria-pressed",String(!protectedMode));$("with").setAttribute("aria-pressed",String(protectedMode))}
-    function resetTrace(){const s=scenarios[selected];trace.textContent=JSON.stringify({mode:protectedMode?"guarded":"unwrapped",tool_request:{name:s.tool,arguments:s.arguments},status:"ready"},null,2);decision.textContent="Ready to replay";decision.className="status idle";explanation.textContent=""}
-    function replay(){const s=scenarios[selected];const status=protectedMode?(s.allow?"allowed":"denied"):"outside_policy_boundary";trace.textContent=JSON.stringify({source:"synthetic_browser_replay",mode:protectedMode?"AgentShield wrapped":"unwrapped app handler",tool_request:{name:s.tool,arguments:s.arguments},policy_enforced:protectedMode,decision:status,reason:protectedMode?s.reason:"no_wrapper_registered",handler_executed:false},null,2);decision.textContent=protectedMode?(s.allow?"✓ ALLOWED BY POLICY":"× DENIED BEFORE EXECUTION"):"⚠ NO AGENTSHIELD ENFORCEMENT";decision.className="status"+(status==="denied"||status==="outside_policy_boundary"?" warn":"");explanation.textContent=protectedMode?s.explanation:"The request bypasses AgentShield. The host application's own logic would determine whether the raw handler executes; this demo does not execute it."}
-    $("without").addEventListener("click",()=>{protectedMode=false;renderMode();resetTrace()});$("with").addEventListener("click",()=>{protectedMode=true;renderMode();resetTrace()});$("run").addEventListener("click",replay);
-    $("guided").addEventListener("click",()=>{selected=1;protectedMode=false;renderMenu();renderMode();replay();$("guided").textContent="Step 1/2: Unguarded";window.setTimeout(()=>{protectedMode=true;renderMode();replay();$("guided").textContent="Step 2/2: Guard blocks email";window.setTimeout(()=>{$("guided").textContent="▶ Guided walkthrough"},2600)},2600)});
-    $("copy-code").addEventListener("click",async()=>{try{await navigator.clipboard.writeText($("snippet").textContent);$("copy-code").textContent="✓ Copied"}catch(_){$("copy-code").textContent="Select code to copy"}});
-    $("feedback-form").addEventListener("submit",event=>{event.preventDefault();const framework=$("framework").value,interest=$("interest").value,problem=$("problem").value.trim();if(!framework||!interest||problem.length<10)return;const title="Developer feedback: "+framework;const body=["## Agent framework",framework,"","## Would test the SDK? ",interest,"","## Risky tool / integration blocker",problem,"","---","Submitted from the public AgentShield product demo. Synthetic example only; do not post secrets."].join("\n");const url="https://github.com/chirayukapoor5/agentshield/issues/new?"+new URLSearchParams({title,body}).toString();$("feedback-status").textContent="Opening GitHub. Review the prefilled issue and press Submit there to send it.";window.open(url,"_blank","noopener,noreferrer")});
-    renderMenu();renderMode();resetTrace();
-  </script>
+  <script src="sandbox.js" defer></script>
 </body>
 </html>
