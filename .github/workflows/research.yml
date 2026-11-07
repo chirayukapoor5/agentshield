@@ -14,9 +14,9 @@ jobs:
           python-version: "3.12"
       - name: Install offline harness dependencies
         run: python -m pip install pytest 'PyYAML>=6.0.1,<7'
-      - name: Run offline research tests
+      - name: Run offline research and guard stress-harness tests
         env:
-          PYTHONPATH: .
+          PYTHONPATH: sdk:.
         run: python -m pytest -q tests research/test_validate_results.py research/test_paired_analysis.py research/test_audit_traces.py
       - name: Smoke test zero-API dry run
         env:
