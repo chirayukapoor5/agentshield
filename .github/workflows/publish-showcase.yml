@@ -76,9 +76,21 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-      - name: Print published URL
+      - name: Verify publicly reachable HTTPS page and interactive content
         env:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
-          echo "GitHub Pages reported deployment URL: $PAGE_URL"
-          test -n "$PAGE_URL"
+          case "$PAGE_URL" in
+            https://*) ;;
+            *) echo "Invalid or missing HTTPS deployment URL"; exit 1;;
+          esac
+          for attempt in 1 2 3 4 5 6 7 8; do
+            code=$(curl -sS -L --max-time 15 -o /tmp/agentshield-live.html -w '%{http_code}' "$PAGE_URL" || true)
+            if [ "$code" = "200" ] && grep -q 'id="demo"' /tmp/agentshield-live.html && grep -q 'id="feedback"' /tmp/agentshield-live.html; then
+              echo "Verified public demo: $PAGE_URL (HTTP $code, demo and feedback present)"
+              exit 0
+            fi
+            echo "Public page verification attempt $attempt failed: HTTP $code"
+            sleep 5
+          done
+          echo "Deployment was not verified reachable"; exit 1
