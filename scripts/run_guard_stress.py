@@ -27,7 +27,7 @@ from agentshield_guard import (
     dispatch_chat_tool_calls,
 )
 
-VERSION = "guard-stress-v1"
+VERSION = "guard-stress-v2"
 DEFAULT_SEED = 20261107
 QUOTAS = (
     ("unlisted_tool_names", 2500),
@@ -194,7 +194,7 @@ def approval_and_audit(i: int, _rng: random.Random) -> int:
 def _malformed_variant(i: int) -> tuple[Any, int]:
     """Independently invalid records; first call in each batch is well formed."""
     identifier = "bad-" + str(i)
-    kind = i % 15
+    kind = i % 19
     if kind == 0:
         return _tool_call("good", "read_doc", '{"text":"duplicate id"}'), 4
     if kind == 1:
@@ -224,7 +224,16 @@ def _malformed_variant(i: int) -> tuple[Any, int]:
         return {"type": "function", "id": identifier}, 4
     if kind == 13:
         return _tool_call(identifier, "read_doc", "{}"), 1
-    return None, 4
+    if kind == 14:
+        return None, 4
+    if kind == 15:
+        # Escaped surrogate is ASCII on the wire but invalid after parsing.
+        return _tool_call(identifier, "read_doc", '{"text":"\\ud800"}'), 4
+    if kind == 16:
+        return _tool_call(identifier, "read_doc", '{"te\\udfffxt":"x"}'), 4
+    if kind == 17:
+        return _tool_call(identifier + "\ud800", "read_doc", "{}"), 4
+    return _tool_call(identifier, "read_doc\ud800", "{}"), 4
 
 
 def atomic_malformed_batches(i: int, _rng: random.Random) -> int:
