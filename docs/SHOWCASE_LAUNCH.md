@@ -2,9 +2,27 @@
 
 Checked: 2026-11-07. **Public functional demo v3:** https://chirayukapoor5.github.io/agentshield/
 
-The earlier v2 [deployment run #42363097365](https://github.com/chirayukapoor5/agentshield/actions/runs/42363097365) passed build, deploy and HTTP verification. V3 requires a separate successful run of the Chromium release gate before it should be called publicly verified. The public page and bundled `sandbox.js` independently returned **HTTP 200**; the deployed JavaScript contained the one-time approval implementation. The CI test uses a simulated DOM; independent interactive-browser verification from this environment is blocked by network restrictions.
+The earlier v2 [deployment run #42363097365](https://github.com/chirayukapoor5/agentshield/actions/runs/42363097365) passed build, deploy and HTTP verification. V3 has now passed [real Chromium acceptance #42365768463](https://github.com/chirayukapoor5/agentshield/actions/runs/42365768463) and [public release #42366014251](https://github.com/chirayukapoor5/agentshield/actions/runs/42366014251). GitHub Actions verified the public HTML and `sandbox.js` each returned HTTP 200 at 2026-11-07 10:57 UTC. The Chromium gate also captured desktop and mobile screenshots. This verifies the five synthetic browser stages, not live LLM or OS/network execution. The public page and bundled `sandbox.js` independently returned **HTTP 200**; the deployed JavaScript contained the one-time approval implementation. The CI test uses a simulated DOM; independent interactive-browser verification from this environment is blocked by network restrictions.
 
 This is a **synthetic JavaScript tool sandbox** demonstrating SDK-equivalent decisions, not a live Groq/LLM run or an actual execution of the Python AgentShield SDK.
+
+## Reproducible five-tool actual Python SDK check
+
+The webpage intentionally runs fictional JavaScript handlers. To verify the
+**real Python AgentShield guard** across the same five categories (allowlisted
+read, approval-required email, approved file deletion, exact-host HTTPS policy,
+and approved toy command), run:
+
+```bash
+git checkout research/multilingual-injection-2026
+PYTHONPATH=sdk python sdk/examples/five_stage_guard_demo.py
+python -m pytest -q sdk/tests/test_five_stage_guard_demo.py
+```
+
+This runnable example executes actual `AgentShield.wrap_registry` wrappers,
+uses one-time synthetic approvals and returns a JSON audit report. Its Python
+handlers also use fictional values only: no email, file deletion, network
+request or OS shell process occurs.
 
 ## Five complete demo phases (v3)
 
