@@ -244,11 +244,13 @@ def test_async_only_structured_tool_refused_before_any_execution():
 def test_runtime_injected_arguments_refused_without_native_injection_support():
     # LangGraph injects ToolRuntime itself; the adapter must not strip
     # hidden state or silently invoke such a tool with model-supplied data.
-    from langchain_core.tools import ToolRuntime
+    from typing import Annotated
+    from langchain_core.tools import InjectedToolArg
 
     @tool
-    def inspect_runtime(document_id: str, runtime: ToolRuntime) -> str:
-        """Inspect a synthetic document with graph run context."""
+    def inspect_runtime(document_id: str,
+                        hidden: Annotated[str, InjectedToolArg]) -> str:
+        """Inspect a synthetic document with injected context."""
         return document_id
 
     with pytest.raises(ValueError, match="injected or hidden"):
