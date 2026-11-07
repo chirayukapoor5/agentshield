@@ -7,6 +7,7 @@ on:
     paths:
       - public-demo/**
       - scripts/verify_public_demo.py
+      - scripts/test_public_demo.mjs
       - .github/workflows/publish-showcase.yml
   pull_request:
     paths:
@@ -40,6 +41,8 @@ jobs:
           python-version: '3.12'
       - name: Verify static demo and JavaScript syntax
         run: python scripts/verify_public_demo.py
+      - name: Smoke test guard modes and feedback URL with simulated DOM
+        run: node scripts/test_public_demo.mjs
       - name: Prepare no-Jekyll static site
         run: |
           touch public-demo/.nojekyll
