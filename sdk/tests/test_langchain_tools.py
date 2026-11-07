@@ -6,6 +6,7 @@ network or real tool calls here; all handlers mutate local test arrays only.
 from __future__ import annotations
 
 import json
+from typing import Annotated
 
 import pytest
 
@@ -13,6 +14,7 @@ langchain_tools = pytest.importorskip("langchain_core.tools")
 from agentshield_guard import AgentShield, ToolPolicy, wrap_langchain_tools
 
 tool = langchain_tools.tool
+InjectedToolArg = langchain_tools.InjectedToolArg
 
 
 def test_read_only_tool_invoked_through_policy_and_schema_preserved():
@@ -244,9 +246,6 @@ def test_async_only_structured_tool_refused_before_any_execution():
 def test_runtime_injected_arguments_refused_without_native_injection_support():
     # LangGraph injects ToolRuntime itself; the adapter must not strip
     # hidden state or silently invoke such a tool with model-supplied data.
-    from typing import Annotated
-    from langchain_core.tools import InjectedToolArg
-
     @tool
     def inspect_runtime(document_id: str,
                         hidden: Annotated[str, InjectedToolArg]) -> str:
