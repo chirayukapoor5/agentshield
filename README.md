@@ -8,6 +8,22 @@ The standalone showcase now executes **all five synthetic tool workflows** in a 
 
 To validate the same five categories against the **actual Python Guard SDK**, run [`sdk/examples/five_stage_guard_demo.py`](https://github.com/chirayukapoor5/agentshield/blob/research/multilingual-injection-2026/sdk/examples/five_stage_guard_demo.py). Real Chromium desktop/mobile tests and the live v3 release passed in [run #42366014251](https://github.com/chirayukapoor5/agentshield/actions/runs/42366014251). [Deployment verification — successful GitHub Actions run #42362092218](https://github.com/chirayukapoor5/agentshield/actions/runs/42362092218) checked the deployed HTTPS page returned HTTP 200 with the demo and feedback sections.
 
+## Get AgentShield into a real LangGraph agent
+
+The optional [LangGraph ToolNode adapter](https://github.com/chirayukapoor5/agentshield/blob/research/multilingual-injection-2026/sdk/agentshield_guard/langchain_tools.py) wraps synchronous LangChain tools in AgentShield's authorization gate. Use the **wrapped** definitions in ToolNode **and** `model.bind_tools`; using original tool objects bypasses the guard.
+
+```bash
+git clone https://github.com/chirayukapoor5/agentshield.git
+cd agentshield
+git checkout research/multilingual-injection-2026
+python -m pip install -e './sdk[langgraph]'
+python sdk/examples/langgraph_toolnode.py
+```
+
+This executable example invokes a real compiled LangGraph `ToolNode` using fictional inputs, with one authorized read, one approved simulated email, and denied unauthorized calls. It needs no API key. The adapter does not support injected ToolRuntime arguments, async-only tools, or handlers that bypass the wrapped registry. [SDK limitations and tests](https://github.com/chirayukapoor5/agentshield/blob/research/multilingual-injection-2026/sdk/README.md).
+
+A separate [bounded Groq live-model canary on November 7](https://github.com/chirayukapoor5/agentshield/actions/runs/42369186158) successfully executed **one model-generated `read_note` tool call** in two provider turns. The real model did not attempt an email call; this must **not** be presented as an attack-success-rate or prompt-injection-resistance result. See [evidence and limitations](https://github.com/chirayukapoor5/agentshield/blob/research/multilingual-injection-2026/docs/LIVE_MODEL_CANARY_2026-11-07.md).
+
 The current Guard SDK and research code are on branch [research/multilingual-injection-2026](https://github.com/chirayukapoor5/agentshield/tree/research/multilingual-injection-2026); [developer feedback is welcome in issue #2](https://github.com/chirayukapoor5/agentshield/issues/2).
 
 This is a **policy-boundary simulation**, not a live attack, measured multilingual defense efficacy, or production security guarantee.
