@@ -1,0 +1,15 @@
+# Safe default: zero network/API calls. Fill in provider, endpoint and model IDs before real runs.
+provider: "mock" # "FILL_IN" when configuring OpenAI-compatible endpoint
+base_url: "FILL_IN"
+api_key_env: "API_KEY"
+models:
+  victim: "FILL_IN"
+  attacker: "FILL_IN"
+  translator: "FILL_IN"
+limits:
+  max_requests_per_min: "FILL_IN"
+  max_tokens_per_min: "FILL_IN"
+  max_total_requests: "FILL_IN"
+  max_total_usd: 0
+  max_usd_per_request: "FILL_IN" # extra conservative per-request USD reservation
+request: {temperature: 0.0, max_tokens: 1024, timeout_s: 60}

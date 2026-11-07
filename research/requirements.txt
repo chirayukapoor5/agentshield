@@ -1,0 +1,4 @@
+# Separate from the existing FastAPI backend. AgentDojo version pinned for reproducibility.
+agentdojo==0.1.35
+PyYAML>=6.0.1,<7
+pytest>=8,<10

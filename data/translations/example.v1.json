@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "illustrative-unscored-en-01",
+      "lang": "en",
+      "text": "ILLUSTRATIVE_PLACEHOLDER_ONLY",
+      "provenance": "human",
+      "back_translation": "ILLUSTRATIVE_PLACEHOLDER_ONLY",
+      "back_translation_similarity": null,
+      "needs_native_check": true,
+      "validated_by_me": false
+    }
+  ]
+}

@@ -1,8 +1,52 @@
 # AgentShield
 
+## Try the AgentShield Guard showcase
+
+The new [standalone interactive product demo](public-demo/index.html) lets developers compare a registered AgentShield guard against an unwrapped tool path in five synthetic scenarios. It includes a guided walkthrough, an SDK snippet, and a route to real developer feedback.
+
+**Published and verified (November 7, 2026): [Try the live AgentShield Guard demo](https://chirayukapoor5.github.io/agentshield/).** GitHub Pages deployment [#42362092218](https://github.com/chirayukapoor5/agentshield/actions/runs/42362092218) passed the build, SDK-style browser replay checks, publication and unauthenticated HTTPS verification (HTTP 200, containing demo and feedback sections). The release entrypoint is `.github/workflows/nextjs.yml` on `main`, which checks out `public-demo/` from this research branch and publishes only the standalone static demo.
+
+- [Download the independently verified static preview](https://github.com/chirayukapoor5/agentshield/actions/runs/42359471308/artifacts/13569255940) (GitHub Actions artifact).
+- [View and contribute developer feedback](https://github.com/chirayukapoor5/agentshield/issues/2) — no external input has been claimed yet.
+- [60-second walkthrough and launch checklist](docs/SHOWCASE_LAUNCH.md).
+
+This is a deterministic SDK policy demonstration, **not** a live model-security test or measured AgentDojo attack-success rate.
+
 AgentShield is a prototype for owner-authorized website compatibility and security checks. It combines a FastAPI backend, SQLAlchemy persistence, Alembic migrations, and a Next.js dashboard.
 
 > **Project status:** prototype. Ownership is verified through a DNS TXT challenge before scanning. The scanner makes bounded, non-destructive public HTTP(S) requests and persists evidence for the checks it implements. It is not a penetration test, security certification, or guarantee that a site is safe.
+
+## AgentShield Guard — one-package protective SDK prototype
+
+A new self-contained Python SDK wraps application-owned agent tools with explicit allowlists, approval gates, exact HTTPS hostname rules and fail-closed denial. Install directly from this checkout (not yet published to PyPI):
+
+```bash
+python -m pip install ./sdk
+python sdk/examples/quickstart.py
+python sdk/examples/demo_stats.py
+```
+
+Source: [sdk/](sdk/) · [documentation](sdk/README.md) · [reproduced local demo](docs/SDK_DEMO_RESULTS.md).
+
+**Current limitation:** The application must register the SDK's wrapped functions for enforcement; this is not an automatic universal agent firewall. Synthetic policy decisions are **not** AgentDojo ASR or real-world prompt-injection efficacy. The SDK now has a bounded optional Groq transport and an OpenAI-compatible local function-call dispatcher. Signed policies, proxy interception, automatic framework interception and independent production security certification are not implemented.
+
+---
+
+## Research track: multilingual adaptive prompt injection (November 2026)
+
+The original AgentShield SaaS remains a **website-scanning prototype**. A separate, experimental research package lives in [research/README.md](research/README.md). Its analysis plan is in [docs/ANALYSIS_PLAN.md](docs/ANALYSIS_PLAN.md). No full AgentDojo attack evaluations or per-language ASR comparisons have been published, and no measured attack-success rates or task-utility results are claimed. The bounded Groq tool-use smoke is separate from AgentDojo benchmarking.
+
+The research comparisons are C1 static English, C2 static translated, C3 adaptive English-only, and C4 adaptive multilingual/script/code-mix, using a single pinned AgentDojo suite and official checkers. The repository defaults to a zero-network mock client.
+
+```bash
+python -m pip install pytest 'PyYAML>=6.0.1,<7'
+make test
+make dry-run
+```
+
+Install the pinned AgentDojo package with `make setup` only in an environment where package downloads are permitted. Fill `config/api.yaml` and private `.env` before any paid calls; provider `mock` makes no real API calls. `scripts/check_api.py` is manual opt-in only. The official integration is incomplete; the scripts fail closed rather than producing fabricated scores. See [research/API_INTEGRATION.md](research/API_INTEGRATION.md) and [docs/RESULTS_SUMMARY.md](docs/RESULTS_SUMMARY.md).
+
+---
 
 ## What is implemented
 

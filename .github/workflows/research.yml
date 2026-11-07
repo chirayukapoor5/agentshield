@@ -1,0 +1,57 @@
+name: research-offline-tests
+on:
+  push:
+    branches: ["research/**"]
+  pull_request:
+    paths: ["src/**", "research/**", "tests/**", "config/**", "scripts/**", ".github/workflows/research.yml"]
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install offline harness dependencies
+        run: python -m pip install pytest 'PyYAML>=6.0.1,<7'
+      - name: Run offline research tests
+        env:
+          PYTHONPATH: .
+        run: python -m pytest -q tests research/test_validate_results.py research/test_paired_analysis.py research/test_audit_traces.py
+      - name: Smoke test zero-API dry run
+        env:
+          PYTHONPATH: .
+        run: python scripts/run_static.py --mock
+
+  agentdojo-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned AgentDojo
+        run: python -m pip install 'agentdojo==0.1.35' pytest
+      - name: Check upstream defenses and suite access (no model calls)
+        env:
+          PYTHONPATH: .
+        run: |
+          python -c "from src.eval.agentdojo_adapter import verify_defenses,load_workspace; print(verify_defenses()); print('suite:',load_workspace().name)"
+          python scripts/select_pairs.py --count 2 --output /tmp/agentshield-pair-check.json
+      - name: Check mock AgentDojo pipeline construction (zero API calls)
+        env:
+          PYTHONPATH: .
+        run: |
+          python - <<'PY'
+          from tempfile import TemporaryDirectory
+          from pathlib import Path
+          from src.llm.client import Client
+          from src.eval.build_pipeline import build_pipeline
+          with TemporaryDirectory() as d:
+              client=Client(config={'provider':'mock','models':{},'limits':{},
+                                    'request':{'temperature':0,'max_tokens':16}},
+                            ledger=Path(d)/'ledger.sqlite3',cache_dir=Path(d)/'cache')
+              for defense in ('none','tool_filter','repeat_user_prompt'):
+                  pipeline=build_pipeline(client, defense)
+                  print(defense, type(pipeline).__name__)
+          PY

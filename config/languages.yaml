@@ -1,0 +1,9 @@
+# Replace placeholders with languages you can meaningfully review.
+languages:
+  - {id: en, script: Latn, native_validation_available: true}
+  - {id: FILL_IN_LANGUAGE_1, script: FILL_IN, native_validation_available: false}
+  - {id: FILL_IN_LANGUAGE_2, script: FILL_IN, native_validation_available: false}
+  - {id: FILL_IN_LANGUAGE_3, script: FILL_IN, native_validation_available: false}
+variants:
+  code_switched: {enabled: false, languages: [en, FILL_IN_LANGUAGE_1]}
+  romanized: {enabled: false, language: FILL_IN_LANGUAGE_1}

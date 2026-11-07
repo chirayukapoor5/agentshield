@@ -1,0 +1,96 @@
+name: publish-agent-shield-showcase
+
+on:
+  push:
+    branches:
+      - research/multilingual-injection-2026
+    paths:
+      - public-demo/**
+      - scripts/verify_public_demo.py
+      - scripts/test_public_demo.mjs
+      - .github/workflows/publish-showcase.yml
+  pull_request:
+    paths:
+      - public-demo/**
+      - scripts/verify_public_demo.py
+      - .github/workflows/publish-showcase.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: agentshield-showcase-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify static demo and JavaScript syntax
+        run: python scripts/verify_public_demo.py
+      - name: Smoke test guard modes and feedback URL with simulated DOM
+        run: node scripts/test_public_demo.mjs
+      - name: Prepare no-Jekyll static site
+        run: |
+          touch public-demo/.nojekyll
+          test -s public-demo/index.html
+      - name: Preserve independently verified preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentshield-static-showcase-preview
+          path: public-demo/
+          if-no-files-found: error
+          retention-days: 30
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload static showcase
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: public-demo
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify publicly reachable HTTPS page and interactive content
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          case "$PAGE_URL" in
+            https://*) ;;
+            *) echo "Invalid or missing HTTPS deployment URL"; exit 1;;
+          esac
+          for attempt in 1 2 3 4 5 6 7 8; do
+            code=$(curl -sS -L --max-time 15 -o /tmp/agentshield-live.html -w '%{http_code}' "$PAGE_URL" || true)
+            if [ "$code" = "200" ] && grep -q 'id="demo"' /tmp/agentshield-live.html && grep -q 'id="feedback"' /tmp/agentshield-live.html; then
+              echo "Verified public demo: $PAGE_URL (HTTP $code, demo and feedback present)"
+              exit 0
+            fi
+            echo "Public page verification attempt $attempt failed: HTTP $code"
+            sleep 5
+          done
+          echo "Deployment was not verified reachable"; exit 1

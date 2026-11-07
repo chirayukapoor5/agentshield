@@ -22,3 +22,14 @@ frontend/out/
 
 # System
 .DS_Store
+
+# Research runtime artifacts (may contain sensitive generated tool text or responses)
+data/runs/*
+!data/runs/.gitkeep
+data/cache/*
+!data/cache/.gitkeep
+data/translations/generated*
+results/tables/*
+!results/tables/.gitkeep
+results/figures/*
+!results/figures/.gitkeep
