@@ -223,3 +223,34 @@ def test_runnable_langgraph_cookbook_completes_without_model():
     assert report["denied"] == {"ok": False, "error": "policy_denied"}
     assert report["denied_again"] == {"ok": False, "error": "policy_denied"}
     assert "Fictional outbox entry saved" in report["approved"]
+
+
+
+def test_async_only_structured_tool_refused_before_any_execution():
+    called = []
+
+    @tool
+    async def async_lookup(document_id: str) -> str:
+        """Read a fictional document with an async-only function."""
+        called.append(document_id)
+        return "fixture"
+
+    with pytest.raises(ValueError, match="async-only"):
+        wrap_langchain_tools(AgentShield(
+            ToolPolicy(read_only_tools={"async_lookup"})), [async_lookup])
+    assert called == []
+
+
+def test_runtime_injected_arguments_refused_without_native_injection_support():
+    # LangGraph injects ToolRuntime itself; the adapter must not strip
+    # hidden state or silently invoke such a tool with model-supplied data.
+    from langchain_core.tools import ToolRuntime
+
+    @tool
+    def inspect_runtime(document_id: str, runtime: ToolRuntime) -> str:
+        """Inspect a synthetic document with graph run context."""
+        return document_id
+
+    with pytest.raises(ValueError, match="injected or hidden"):
+        wrap_langchain_tools(AgentShield(ToolPolicy(
+            read_only_tools={"inspect_runtime"})), [inspect_runtime])
