@@ -4,7 +4,9 @@
 
 **Live:** [https://chirayukapoor5.github.io/agentshield/](https://chirayukapoor5.github.io/agentshield/)
 
-The standalone showcase compares guarded and unguarded tool requests in five **synthetic** scenarios and includes a 60-second walkthrough, Python SDK integration example, and developer feedback form. [Deployment verification — successful GitHub Actions run #42362092218](https://github.com/chirayukapoor5/agentshield/actions/runs/42362092218) checked the deployed HTTPS page returned HTTP 200 with the demo and feedback sections.
+The standalone showcase now executes **all five synthetic tool workflows** in a safe in-memory sandbox: read a document, approve/deny an email, approve/deny file deletion, check an exact HTTPS host against an allowlist, and approve a toy command. The guided tour shows the result of each step; nothing uses the real network, operating system or email delivery. It includes an audit trail, reset button and developer feedback form.
+
+To validate the same five categories against the **actual Python Guard SDK**, run [`sdk/examples/five_stage_guard_demo.py`](https://github.com/chirayukapoor5/agentshield/blob/research/multilingual-injection-2026/sdk/examples/five_stage_guard_demo.py). Real Chromium desktop/mobile tests and the live v3 release passed in [run #42366014251](https://github.com/chirayukapoor5/agentshield/actions/runs/42366014251). [Deployment verification — successful GitHub Actions run #42362092218](https://github.com/chirayukapoor5/agentshield/actions/runs/42362092218) checked the deployed HTTPS page returned HTTP 200 with the demo and feedback sections.
 
 The current Guard SDK and research code are on branch [research/multilingual-injection-2026](https://github.com/chirayukapoor5/agentshield/tree/research/multilingual-injection-2026); [developer feedback is welcome in issue #2](https://github.com/chirayukapoor5/agentshield/issues/2).
 
