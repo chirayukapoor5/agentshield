@@ -8,12 +8,12 @@ on:
       - public-demo/**
       - scripts/verify_public_demo.py
       - .github/workflows/publish-showcase.yml
-  workflow_dispatch:
   pull_request:
     paths:
       - public-demo/**
       - scripts/verify_public_demo.py
       - .github/workflows/publish-showcase.yml
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -41,16 +41,16 @@ jobs:
       - name: Verify static demo and JavaScript syntax
         run: python scripts/verify_public_demo.py
       - name: Prepare no-Jekyll static site
-        shell: bash
         run: |
           touch public-demo/.nojekyll
           test -s public-demo/index.html
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-      - name: Upload static showcase
-        uses: actions/upload-pages-artifact@v4
+      - name: Preserve independently verified preview
+        uses: actions/upload-artifact@v4
         with:
-          path: public-demo
+          name: agentshield-static-showcase-preview
+          path: public-demo/
+          if-no-files-found: error
+          retention-days: 30
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -61,6 +61,15 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload static showcase
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: public-demo
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
