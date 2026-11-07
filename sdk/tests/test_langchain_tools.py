@@ -207,3 +207,19 @@ def test_original_unwrapped_tool_remains_unprotected_by_design():
     # pass original tools to ToolNode or model.bind_tools!
     assert read_document.invoke({"document_id": "original-call"}) == "fixture"
     assert seen == ["original-call"]
+
+
+
+def test_runnable_langgraph_cookbook_completes_without_model():
+    import runpy
+    from pathlib import Path
+
+    example = Path(__file__).resolve().parents[1] / "examples" / "langgraph_toolnode.py"
+    report = runpy.run_path(str(example))["demo"]()
+    assert report["fictional_outbox_count"] == 1
+    assert report["real_email_delivered"] is False
+    assert report["model_invocations"] == 0
+    assert "Synthetic document" in report["read"]
+    assert report["denied"] == {"ok": False, "error": "policy_denied"}
+    assert report["denied_again"] == {"ok": False, "error": "policy_denied"}
+    assert "Fictional outbox entry saved" in report["approved"]
