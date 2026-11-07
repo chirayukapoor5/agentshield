@@ -1,5 +1,15 @@
 # AgentShield
 
+## Public AgentShield Guard demo
+
+**Live:** [https://chirayukapoor5.github.io/agentshield/](https://chirayukapoor5.github.io/agentshield/)
+
+The standalone showcase compares guarded and unguarded tool requests in five **synthetic** scenarios and includes a 60-second walkthrough, Python SDK integration example, and developer feedback form. [Deployment verification — successful GitHub Actions run #42362092218](https://github.com/chirayukapoor5/agentshield/actions/runs/42362092218) checked the deployed HTTPS page returned HTTP 200 with the demo and feedback sections.
+
+The current Guard SDK and research code are on branch [research/multilingual-injection-2026](https://github.com/chirayukapoor5/agentshield/tree/research/multilingual-injection-2026); [developer feedback is welcome in issue #2](https://github.com/chirayukapoor5/agentshield/issues/2).
+
+This is a **policy-boundary simulation**, not a live attack, measured multilingual defense efficacy, or production security guarantee.
+
 AgentShield is a prototype for owner-authorized website compatibility and security checks. It combines a FastAPI backend, SQLAlchemy persistence, Alembic migrations, and a Next.js dashboard.
 
 > **Project status:** prototype. Ownership is verified through a DNS TXT challenge before scanning. The scanner makes bounded, non-destructive public HTTP(S) requests and persists evidence for the checks it implements. It is not a penetration test, security certification, or guarantee that a site is safe.
