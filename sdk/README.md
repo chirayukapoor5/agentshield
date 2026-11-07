@@ -21,6 +21,61 @@ secured_tools = shield.wrap_registry({'search': my_search_function})
 Unlisted calls are denied. State-changing actions need an explicit approval callback. For URL-bearing tools, declare every URL argument and an exact HTTPS hostname allowlist. DNS and redirects still require network-layer enforcement; matching a hostname does not prevent DNS rebinding or hidden redirects. Never treat tool-output text as authoritative instructions.
 
 
+## LangGraph / LangChain integration (optional)
+
+For an existing LangGraph or LangChain application using **synchronous
+`StructuredTool`** functions, the adapter preserves the model-visible
+argument schemas and puts the real AgentShield authorization gate before the
+registered handler. This is a practical integration using the actual
+`langchain-core` and `langgraph` libraries, not a browser simulation.
+
+From the repository root:
+
+```bash
+python -m pip install -e './sdk[langgraph]'
+python sdk/examples/langgraph_toolnode.py
+```
+
+The runnable example constructs a real `StateGraph(MessagesState)`, adds a
+`ToolNode` built from AgentShield-wrapped tools, compiles it and invokes it
+with synthetic `AIMessage(tool_calls=...)` records. It performs no model
+requests, email delivery or external I/O. Expect one read, two denied email
+calls, and exactly one approved in-memory email.
+
+Minimal integration with your *already defined* LangChain `@tool` functions:
+
+```python
+from agentshield_guard import AgentShield, ToolPolicy, wrap_langchain_tools
+from langgraph.prebuilt import ToolNode
+
+shield = AgentShield(ToolPolicy(
+    read_only_tools={"read_document"},
+    approval_tools={"send_email"},
+), approve=your_human_approval_callback)
+
+# These are existing LangChain StructuredTool instances.
+safe_tools = wrap_langchain_tools(shield, [read_document, send_email])
+node = ToolNode(safe_tools)
+
+# IMPORTANT: also give safe_tools (NOT raw tools) to model.bind_tools(...).
+# Add node to a compiled StateGraph so ToolRuntime is available.
+```
+
+The adapter returns fixed `{"ok":false,"error":"policy_denied"}` tool content
+for rejected tool requests, without running handlers or exposing exception
+details. Agent/tool loops must never interpret these as successful business
+actions. Handler exceptions are sanitized. Your application must make its
+approval callback thread-safe and bind the approval to the precise user/action.
+
+**Explicit limits:** Sync `StructuredTool` only. Async-only tools, injected
+ToolRuntime/state/store arguments, artifact-returning tools and arbitrary
+`BaseTool` subclasses are refused. It does not guard raw tool instances
+that your app continues calling directly; it does not sandbox handlers,
+prevent outbound side effects in a permitted tool, authenticate reviewers,
+or prove prompt-injection resilience. See the
+[runnable LangGraph sample](examples/langgraph_toolnode.py) and
+[test contract](tests/test_langchain_tools.py).
+
 ## Policy configuration integrity
 
 `ToolPolicy` snapshots its allowlists and URL-argument declarations at construction.
