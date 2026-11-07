@@ -89,8 +89,9 @@ evidence the command has been executed.
 
 `src/attack/search.py` validates condition-specific languages, code-mixing
 ratios, query caps, scenario-bound resumptions, and hashes candidate texts
-instead of writing raw attack/defender content. On oracle failures it logs an
-unscorable consumed attempt and stops for manual review. The code accepts
+instead of writing raw attack/defender content. On proposer errors, invalid generated candidates, or oracle failures, it
+logs an unscorable consumed attempt and stops for manual review. This prevents
+silent extra attempts when resuming a run after a charged model request. The code accepts
 proposer and evaluator callbacks. The `scripts/run_adaptive.py` pilot now
 connects a budgeted attacker-model proposer to the pinned official AgentDojo
 security checker on one dev/tune scenario. It intentionally excludes held-out
