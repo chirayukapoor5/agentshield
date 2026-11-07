@@ -93,12 +93,12 @@ jobs:
             code=$(curl --proto '=https' --max-redirs 3 -sS -L --max-time 20 -o /tmp/agentshield-showcase.html -w '%{http_code}' "$PAGE_URL" || true)
             if [ "$code" = "200" ] && grep -q 'id="demo"' /tmp/agentshield-showcase.html && grep -q 'id="feedback"' /tmp/agentshield-showcase.html && grep -q 'sandbox-all-five-v3' /tmp/agentshield-showcase.html && grep -q 'def human_approval(tool, args):' /tmp/agentshield-showcase.html; then
               js_code=$(curl --proto '=https' --max-redirs 3 -sS -L --max-time 20 -o /tmp/agentshield-sandbox.js -w '%{http_code}' "${PAGE_URL%/}/sandbox.js" || true)
-              if [ "$js_code" = "200" ] && grep -q 'one-time authorization' /tmp/agentshield-sandbox.js; then
+              if [ "$js_code" = "200" ] && grep -q 'synthetic_browser_sandbox_v3' /tmp/agentshield-sandbox.js; then
                 echo "PUBLIC_DEMO_V3_VERIFIED: $PAGE_URL HTTP $code; sandbox.js HTTP $js_code"
                 exit 0
               fi
             fi
-            echo "Attempt $attempt: HTTP $code, waiting for Pages propagation"
+            echo "Attempt $attempt: page HTTP $code, sandbox.js HTTP ${js_code:-not_checked}; waiting for Pages propagation"
             sleep 5
           done
           echo "Pages deployment is not yet publicly reachable with the intended content"
