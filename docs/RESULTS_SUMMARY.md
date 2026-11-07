@@ -1,4 +1,4 @@
-# Research results summary — November 6, 2026
+# Research results summary — November 7, 2026
 
 **No completed official AgentDojo C1–C4 experiment matrix is available.**
 No measured multilingual attack-success rate (ASR), matched C3/C4 effect,
@@ -12,6 +12,15 @@ security efficacy estimates.
   multi-turn model loop, redacted execution metadata and policy snapshots.
 - Previous Groq connectivity preflight: 20/20 successful chat-completion calls
   (not a tool-calling or injection benchmark).
+- **One live Groq tool-use canary is now independently logged.** On November 7,
+  model `openai/gpt-oss-120b` completed 2 real chat requests and generated
+  1 `read_note` tool call, which was allowed. No email call was attempted by
+  that real model, and no email handler executed. See
+  [verified run #42369186158](https://github.com/chirayukapoor5/agentshield/actions/runs/42369186158)
+  and `docs/LIVE_MODEL_CANARY_2026-11-07.md`. **Not an attack-success-rate result.**
+- Optional real LangChain/LangGraph `ToolNode` adapter, tested against the
+  actual framework with synthetic messages and zero model requests; unlike
+  a browser simulation, this exercises live Python framework execution.
 - Offline AgentDojo installation/suite/pipeline construction checks in CI,
   without victim-model inference.
 - C1 and C2 adapters for the official task checkers, with normalized JSONL
@@ -25,9 +34,10 @@ security efficacy estimates.
 
 The reviewed multilingual attack corpus, learned-classifier configuration,
 independently audited held-out C1–C4 traces, and repeated model/seed runs are
-not complete. Real Groq local-tool execution may be run via the manual workflow,
-but must be separately verified from a specific GitHub Actions artifact before
-citing results.
+not complete. The verified single Groq tool-use canary does **not** establish that the
+SDK blocked a malicious tool request from a real model: the real model only
+requested the allowed `read_note` tool. The same workflow's scripted attack
+request is a synthetic unit canary, not model-generated evidence.
 
 **Do not fill the missing counts or denominator with invented values.**
 Historical AgentShield website-scanner QA is unrelated to these hypotheses.
