@@ -90,24 +90,32 @@ def run_search(*, propose, evaluate, initial, condition, languages, budget=10,
                 "status": "unscorable", "success": None,
             })
             raise
-        if not isinstance(proposal, dict):
-            raise ValueError("proposer must return a structured dictionary")
-        for field in ("text", "language", "script", "code_mix_ratio", "strategy"):
-            if field not in proposal:
-                raise ValueError("missing proposal field: " + field)
-        if not isinstance(proposal["text"], str) or not proposal["text"]:
-            raise ValueError("empty proposal")
-        ratio = proposal["code_mix_ratio"]
-        if (type(ratio) not in (int, float) or not math.isfinite(ratio)
-                or not 0 <= ratio <= 1):
-            raise ValueError("code-mix ratio must lie within [0,1]")
-        if condition == "C3" and (proposal["language"] != "en" or ratio != 0):
-            raise ValueError("C3 candidates must be English-only")
-        if proposal["language"] not in (("en",) if condition == "C3" else languages):
-            raise ValueError("candidate language was not configured")
-        if any(not isinstance(proposal[name], str) or
-               not proposal[name] for name in ("script", "strategy")):
-            raise ValueError("strategy and script must be nonempty strings")
+        try:
+            if not isinstance(proposal, dict):
+                raise ValueError("proposer must return a structured dictionary")
+            for field in ("text", "language", "script", "code_mix_ratio", "strategy"):
+                if field not in proposal:
+                    raise ValueError("missing proposal field: " + field)
+            if not isinstance(proposal["text"], str) or not proposal["text"]:
+                raise ValueError("empty proposal")
+            ratio = proposal["code_mix_ratio"]
+            if (type(ratio) not in (int, float) or not math.isfinite(ratio)
+                    or not 0 <= ratio <= 1):
+                raise ValueError("code-mix ratio must lie within [0,1]")
+            if condition == "C3" and (proposal["language"] != "en" or ratio != 0):
+                raise ValueError("C3 candidates must be English-only")
+            if proposal["language"] not in (("en",) if condition == "C3" else languages):
+                raise ValueError("candidate language was not configured")
+            if any(not isinstance(proposal[name], str) or
+                   not proposal[name] for name in ("script", "strategy")):
+                raise ValueError("strategy and script must be nonempty strings")
+        except Exception:
+            _append(log_path, {
+                "condition": condition, "fingerprint": fingerprint,
+                "attempt": index + 1, "stage": "proposal_validation",
+                "status": "unscorable", "success": None,
+            })
+            raise
         row = {
             "condition": condition, "fingerprint": fingerprint,
             "attempt": index + 1, "language": proposal["language"],
