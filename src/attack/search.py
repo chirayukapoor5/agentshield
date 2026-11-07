@@ -78,7 +78,18 @@ def run_search(*, propose, evaluate, initial, condition, languages, budget=10,
                 "best": best, "history": history}
 
     for index in range(len(history), budget):
-        proposal = propose(initial, list(history), condition, languages)
+        # A proposer call can consume a paid attacker-model request even when
+        # it fails to return usable JSON. Record the attempt before re-raising;
+        # otherwise reruns silently grant extra attacker queries.
+        try:
+            proposal = propose(initial, list(history), condition, languages)
+        except Exception:
+            _append(log_path, {
+                "condition": condition, "fingerprint": fingerprint,
+                "attempt": index + 1, "stage": "proposal",
+                "status": "unscorable", "success": None,
+            })
+            raise
         if not isinstance(proposal, dict):
             raise ValueError("proposer must return a structured dictionary")
         for field in ("text", "language", "script", "code_mix_ratio", "strategy"):
