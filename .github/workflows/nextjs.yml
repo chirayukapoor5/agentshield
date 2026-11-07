@@ -23,7 +23,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 18
     steps:
       - name: Checkout release-ready showcase from research branch
         uses: actions/checkout@v4
@@ -41,9 +41,23 @@ jobs:
           python scripts/verify_public_demo.py
           node scripts/test_public_demo.mjs
           test -s public-demo/index.html
-          grep -q 'sandbox-approval-v2' public-demo/index.html
+          grep -q 'sandbox-all-five-v3' public-demo/index.html
           grep -q 'def human_approval(tool, args):' public-demo/index.html
           test -s public-demo/sandbox.js
+      - name: Install real headless Chromium test environment
+        run: |
+          python -m pip install "playwright==1.57.0"
+          python -m playwright install --with-deps chromium
+      - name: Run full five-stage browser acceptance tests
+        run: python scripts/test_public_demo_browser.py
+      - name: Store browser acceptance screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-showcase-browser-screenshots
+          path: data/ui-acceptance/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Package static page
         run: |
           touch public-demo/.nojekyll
@@ -75,10 +89,10 @@ jobs:
           esac
           for attempt in 1 2 3 4 5 6 7 8; do
             code=$(curl --proto '=https' --max-redirs 3 -sS -L --max-time 20 -o /tmp/agentshield-showcase.html -w '%{http_code}' "$PAGE_URL" || true)
-            if [ "$code" = "200" ] && grep -q 'id="demo"' /tmp/agentshield-showcase.html && grep -q 'id="feedback"' /tmp/agentshield-showcase.html && grep -q 'sandbox-approval-v2' /tmp/agentshield-showcase.html && grep -q 'def human_approval(tool, args):' /tmp/agentshield-showcase.html; then
+            if [ "$code" = "200" ] && grep -q 'id="demo"' /tmp/agentshield-showcase.html && grep -q 'id="feedback"' /tmp/agentshield-showcase.html && grep -q 'sandbox-all-five-v3' /tmp/agentshield-showcase.html && grep -q 'def human_approval(tool, args):' /tmp/agentshield-showcase.html; then
               js_code=$(curl --proto '=https' --max-redirs 3 -sS -L --max-time 20 -o /tmp/agentshield-sandbox.js -w '%{http_code}' "${PAGE_URL%/}/sandbox.js" || true)
               if [ "$js_code" = "200" ] && grep -q 'one-time authorization' /tmp/agentshield-sandbox.js; then
-                echo "PUBLIC_DEMO_V2_VERIFIED: $PAGE_URL HTTP $code; sandbox.js HTTP $js_code"
+                echo "PUBLIC_DEMO_V3_VERIFIED: $PAGE_URL HTTP $code; sandbox.js HTTP $js_code"
                 exit 0
               fi
             fi
