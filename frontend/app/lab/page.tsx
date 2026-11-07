@@ -89,7 +89,9 @@ export default function LabPage() {
   const [playing, setPlaying] = useState(false);
   const [history, setHistory] = useState<number[]>([]);
   const [showRecording, setShowRecording] = useState(false);
+  const [protectionEnabled, setProtectionEnabled] = useState(true);
   const item = scenarios[selected];
+  const decision = protectionEnabled ? item.expected : 'unprotected';
 
   useEffect(() => {
     if (!playing) return;
@@ -106,10 +108,10 @@ export default function LabPage() {
   }, [playing]);
 
   useEffect(() => {
-    if (step === 3) {
+    if (step === 3 && protectionEnabled) {
       setHistory(old => old.includes(selected) ? old : [...old, selected]);
     }
-  }, [step, selected]);
+  }, [step, selected, protectionEnabled]);
 
   const completed = useMemo(() => scenarios.filter((_, i) => history.includes(i)), [history]);
   const allowedCount = completed.filter(x => x.expected === 'allow').length;
@@ -131,6 +133,7 @@ export default function LabPage() {
     setStep(0);
     setSelected(1);
     setHistory([]);
+    setProtectionEnabled(true);
   }
 
   async function copyShare() {
@@ -161,10 +164,10 @@ export default function LabPage() {
         <section className="lab-hero">
           <div className="lab-hero-copy">
             <p className="lab-kicker"><span className="lab-live-dot" /> OPEN-SOURCE SECURITY RESEARCH · PROTOTYPE</p>
-            <h1>Security boundaries<br />for <span className="lab-gradient">AI agents.</span></h1>
-            <p className="lab-lead">A transparent look at AgentShield&apos;s first enforceable tool-call boundary. Inspect a decision, replay synthetic attacks, and open the evidence behind every number.</p>
+            <h1>Stop unsafe tool calls<br /><span className="lab-gradient">before they execute.</span></h1>
+            <p className="lab-lead">A Python policy gate for tool-using AI agents. See how unauthorized email, file deletion, and outbound requests are denied before the wrapped tool executes—then inspect the code.</p>
             <div className="lab-actions">
-              <a href="#simulation" className="lab-btn lab-btn-primary">▶ Run interactive simulation</a>
+              <a href="#simulation" className="lab-btn lab-btn-primary">▶ Compare guarded vs unguarded</a>
               <a href="#proof" className="lab-btn lab-btn-ghost">Explore verified evidence ↗</a>
             </div>
             <p className="lab-disclaimer"><strong>Demonstration only.</strong> This is a deterministic browser replay of the SDK test scenarios—not a live LLM, a penetration test, or a measured prompt-injection defense rate.</p>
@@ -198,6 +201,13 @@ export default function LabPage() {
             <div><p className="lab-eyebrow">INTERACTIVE SANDBOX</p><h2>Watch the policy decision.</h2><p>Choose a scenario to replay the SDK&apos;s documented decision logic.</p></div>
             <span className="lab-demo-flag"><span /> SYNTHETIC · OFFLINE · NO REAL TOOL EXECUTION</span>
           </div>
+          <div className="lab-comparison" role="group" aria-label="Protection mode">
+            <div><strong>See the difference</strong><p>Switch enforcement off to illustrate the risk of executing an unguarded tool request. This is a conceptual comparison, not an LLM attack result.</p></div>
+            <div className="lab-mode-switch">
+              <button type="button" aria-pressed={!protectionEnabled} className={!protectionEnabled ? 'lab-mode-active lab-mode-unsafe' : ''} onClick={() => {setPlaying(false);setStep(0);setProtectionEnabled(false);}}>Without guard</button>
+              <button type="button" aria-pressed={protectionEnabled} className={protectionEnabled ? 'lab-mode-active' : ''} onClick={() => {setPlaying(false);setStep(0);setProtectionEnabled(true);}}>With AgentShield</button>
+            </div>
+          </div>
           <div className="lab-sim-grid">
             <aside className="lab-sim-menu" aria-label="Simulation scenarios">
               <div className="lab-menu-heading"><span>SCENARIO LIBRARY</span><span>08</span></div>
@@ -217,11 +227,11 @@ export default function LabPage() {
                 <div className="lab-terminal-body" role="status" aria-live="polite">
                   <div className="lab-term-line"><span className="lab-term-time">00:00</span><span className="lab-term-key">USER INTENT</span><span>{item.intent}</span></div>
                   {step >= 1 && <div className="lab-term-line"><span className="lab-term-time">00:01</span><span className="lab-term-key">TOOL REQUEST</span><span><code>{item.tool}</code> <code>{item.args}</code></span></div>}
-                  {step >= 2 && <div className="lab-term-line"><span className="lab-term-time">00:02</span><span className="lab-term-key">POLICY CHECK</span><span>{item.rationale}</span></div>}
-                  {step >= 3 && <div className="lab-term-line"><span className="lab-term-time">00:03</span><span className="lab-term-key">DECISION</span><span className={item.expected === 'allow' ? 'lab-green' : 'lab-red'}><strong>{item.expected.toUpperCase()}</strong> · {item.reason}</span></div>}
+                  {step >= 2 && <div className="lab-term-line"><span className="lab-term-time">00:02</span><span className="lab-term-key">POLICY CHECK</span><span>{protectionEnabled ? item.rationale : "No AgentShield wrapper is registered. The tool request would bypass this policy gate; downstream execution depends on the host application."}</span></div>}
+                  {step >= 3 && <div className="lab-term-line"><span className="lab-term-time">00:03</span><span className="lab-term-key">DECISION</span><span className={decision === 'allow' ? 'lab-green' : 'lab-red'}><strong>{decision === 'unprotected' ? 'NO POLICY ENFORCEMENT' : decision.toUpperCase()}</strong> · {decision === 'unprotected' ? 'unguarded_tool_path' : item.reason}</span></div>}
                   {step === 0 && <div className="lab-term-idle">▌ Select Run simulation to replay four steps…</div>}
                 </div>
-                <div className="lab-terminal-footer"><span><span className="lab-live-dot" /> ISOLATED BROWSER SIMULATION</span><span>STEP {step}/3</span></div>
+                <div className="lab-terminal-footer"><span><span className="lab-live-dot" /> ISOLATED BROWSER SIMULATION</span><span>{protectionEnabled ? "GUARDED" : "UNGUARDED"} · STEP {step}/3</span></div>
               </div>
               <div className="lab-sim-controls">
                 <button type="button" onClick={play} className="lab-btn lab-btn-primary">{playing ? '↻ Restart replay' : '▶ Run simulation'}</button>
@@ -229,7 +239,7 @@ export default function LabPage() {
                 <button type="button" className="lab-reset" onClick={reset}>Reset</button>
               </div>
               <div className="lab-run-summary">
-                <div><small>PLAYED</small><strong>{completed.length} / 8</strong></div>
+                <div><small>GUARDED REPLAYS</small><strong>{completed.length} / 8</strong></div>
                 <div><small>ALLOWED</small><strong className="lab-green">{allowedCount}</strong></div>
                 <div><small>DENIED</small><strong className="lab-red">{deniedCount}</strong></div>
                 <div><small>REAL API CALLS</small><strong>0</strong></div>
