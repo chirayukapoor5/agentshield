@@ -161,6 +161,7 @@
           <div class="feature"><strong>Explicit destination rules</strong><span>Selected URL arguments must match configured HTTPS hosts; this is not a network sandbox.</span></div>
           <div class="feature"><strong>Tested model-tool interface</strong><span>An OpenAI-compatible dispatcher and bounded model loop are available in the Python SDK.</span></div>
           <a class="btn" href="https://github.com/chirayukapoor5/agentshield/tree/research/multilingual-injection-2026/sdk" target="_blank" rel="noopener noreferrer">Review implementation and tests ↗</a>
+          <a class="btn primary" href="https://github.com/chirayukapoor5/agentshield/blob/research/multilingual-injection-2026/sdk/examples/langgraph_toolnode.py" target="_blank" rel="noopener noreferrer">Run actual LangGraph ToolNode example ↗</a>
         </div>
         <div>
           <div class="code" id="snippet">from agentshield_guard import AgentShield, ToolPolicy
@@ -194,7 +195,7 @@ print(guarded["send_email"](
     to="demo@example.org", body="Synthetic only"
 ))</div>
           <button class="btn" id="copy-code" type="button">Copy Python example</button>
-          <p class="tiny">To run the full offline demonstration: clone the research branch, install <code>./sdk</code>, then run <code>sdk/examples/chat_tool_calls.py</code>.</p>
+          <p class="tiny">Try the actual LangGraph integration: clone the research branch, run <code>python -m pip install -e './sdk[langgraph]'</code>, then <code>python sdk/examples/langgraph_toolnode.py</code>. It constructs a real compiled LangGraph tool node with an AgentShield guard; all data remains fictional and no API key is required.</p>
         </div>
       </div>
     </section>
