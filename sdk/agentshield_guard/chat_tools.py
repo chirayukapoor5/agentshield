@@ -31,6 +31,27 @@ def _reject_constant(value: str) -> None:
     raise ValueError(f"invalid JSON constant: {value}")
 
 
+def _has_invalid_unicode(value: Any) -> bool:
+    """Reject unpaired Unicode surrogates even when JSON-escaped.
+
+    Python's JSON parser accepts an isolated \\ud800 escape but external
+    tool APIs may not. Walk parsed data iteratively to avoid recursion on
+    attacker-controlled JSON objects.
+    """
+    pending = [value]
+    while pending:
+        current = pending.pop()
+        if isinstance(current, str):
+            if any(0xD800 <= ord(char) <= 0xDFFF for char in current):
+                return True
+        elif isinstance(current, dict):
+            pending.extend(current.keys())
+            pending.extend(current.values())
+        elif isinstance(current, list):
+            pending.extend(current)
+    return False
+
+
 def _parse_calls(
     calls: Sequence[Mapping[str, Any]], *, max_calls: int, max_argument_bytes: int
 ) -> list[tuple[str, str, dict[str, Any]]]:
@@ -58,6 +79,9 @@ def _parse_calls(
             raise MalformedToolCalls("invalid tool name")
         if not isinstance(raw, str):
             raise MalformedToolCalls("invalid or oversized tool arguments")
+        if len(raw) > max_argument_bytes:
+            # Avoid allocating encoded multi-byte copies of enormous input.
+            raise MalformedToolCalls("invalid or oversized tool arguments")
         try:
             byte_count = len(raw.encode("utf-8"))
         except UnicodeError as exc:
@@ -71,6 +95,9 @@ def _parse_calls(
             raise MalformedToolCalls("invalid tool arguments JSON") from exc
         if not isinstance(args, dict):
             raise MalformedToolCalls("tool arguments must be a JSON object")
+        if (_has_invalid_unicode(identifier) or _has_invalid_unicode(name)
+                or _has_invalid_unicode(args)):
+            raise MalformedToolCalls("invalid Unicode in tool-call data")
         verified.append((identifier, name, args))
     return verified
 
