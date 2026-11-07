@@ -10,8 +10,8 @@ scores, and (C) the preregistered AgentDojo research metrics. These are
 
 | Measurement | Numerator / denominator | Source | Meaning / limits |
 | --- | --- | --- | --- |
-| Python SDK test pass count | **85/85 passed** | [SDK CI #42371285290](https://github.com/chirayukapoor5/agentshield/actions/runs/42371285290), Python 3.10 + 3.12 | Every test in this CI suite passed. Fixtures and local-handler tests, not an attack benchmark. |
-| Offline authorization security stress | **10,000/10,000 passing cases per Python version**, 0 failing | [Stress CI #42371225324](https://github.com/chirayukapoor5/agentshield/actions/runs/42371225324); [full report](STRESS_10K_REPORT.md) | Five deterministic generated contract families, two Python versions; no real model inference. A 100% contract pass is **not** a 100% prompt-injection defense rate. |\n| Browser demo functional stages | **5/5 stages exercised** | [Real public HTTPS Chromium run #42370197563](https://github.com/chirayukapoor5/agentshield/actions/runs/42370197563) | Headless Chromium loaded the **live HTTPS page**, tested desktop and mobile, approved/denied all five synthetic tool categories, guided tour, audit and feedback draft. It detected no third-party network requests. This is an acceptance checklist, **not** a 5/5 attack-defense statistic. |
+| Python SDK test pass count | **90/90 passed** | [SDK CI #42371831449](https://github.com/chirayukapoor5/agentshield/actions/runs/42371831449), Python 3.10 + 3.12 | Every test in this CI suite passed. Fixtures and local-handler tests, not an attack benchmark. |
+| Offline authorization security stress | **10,000/10,000 passing cases per Python version**, 0 failing | [Stress CI #42371796465](https://github.com/chirayukapoor5/agentshield/actions/runs/42371796465); [full report](STRESS_10K_REPORT.md) | Five deterministic generated contract families, two Python versions; no real model inference. A 100% contract pass is **not** a 100% prompt-injection defense rate. |\n| Browser demo functional stages | **5/5 stages exercised** | [Real public HTTPS Chromium run #42370197563](https://github.com/chirayukapoor5/agentshield/actions/runs/42370197563) | Headless Chromium loaded the **live HTTPS page**, tested desktop and mobile, approved/denied all five synthetic tool categories, guided tour, audit and feedback draft. It detected no third-party network requests. This is an acceptance checklist, **not** a 5/5 attack-defense statistic. |
 | Public Pages reachability | **HTTP 200** for page and `sandbox.js` | [Deployment #42370197563](https://github.com/chirayukapoor5/agentshield/actions/runs/42370197563) | GitHub Actions checked unauthenticated HTTPS and live browser interaction. A successful HTTP response is not a security rating. |
 | Real Groq model episode | **1 authorized read-only tool call**, **2 model requests** | [Live canary #42369186158](https://github.com/chirayukapoor5/agentshield/actions/runs/42369186158) | Real model requested `read_note` only. **Zero unauthorized tool requests occurred, so a guard-blocking rate is undefined.** |
 | Simulated unapproved email | **1/1 scripted malicious call denied** | Scripted *offline mock* inside [same Groq canary](https://github.com/chirayukapoor5/agentshield/actions/runs/42369186158) | Unit demonstration only, not evidence of real-model attack resistance. |
@@ -153,7 +153,7 @@ and defender utility must remain N/A.**
 
 ## Safe presentation wording
 
-> AgentShield's Python authorization SDK passed 85 of 85 automated tests
+> AgentShield's Python authorization SDK passed 90 of 90 automated tests
 > on Python 3.10 and 3.12, and passed 10,000 seeded authorization\n> contract stress cases on each version. Its five-stage browser demo passed Chromium
 > acceptance tests, and one live Groq episode successfully routed a
 > model-generated, authorized read-only tool call. We assess model
