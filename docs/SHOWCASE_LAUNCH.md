@@ -1,10 +1,26 @@
 # AgentShield public showcase launch runbook
 
-Checked: 2026-11-07. **Public functional demo v2:** https://chirayukapoor5.github.io/agentshield/
+Checked: 2026-11-07. **Public functional demo v3:** https://chirayukapoor5.github.io/agentshield/
 
-GitHub Pages [deployment run #42363097365](https://github.com/chirayukapoor5/agentshield/actions/runs/42363097365) passed checkout, the synthetic browser-sandbox functional tests, build, deploy, and public HTTPS verification. The public page and bundled `sandbox.js` independently returned **HTTP 200**; the deployed JavaScript contained the one-time approval implementation. The CI test uses a simulated DOM; independent interactive-browser verification from this environment is blocked by network restrictions.
+The earlier v2 [deployment run #42363097365](https://github.com/chirayukapoor5/agentshield/actions/runs/42363097365) passed build, deploy and HTTP verification. V3 requires a separate successful run of the Chromium release gate before it should be called publicly verified. The public page and bundled `sandbox.js` independently returned **HTTP 200**; the deployed JavaScript contained the one-time approval implementation. The CI test uses a simulated DOM; independent interactive-browser verification from this environment is blocked by network restrictions.
 
 This is a **synthetic JavaScript tool sandbox** demonstrating SDK-equivalent decisions, not a live Groq/LLM run or an actual execution of the Python AgentShield SDK.
+
+## Five complete demo phases (v3)
+
+The interactive page now includes a real *fictional in-memory effect* for each of the five cases. Every step has guarded and unguarded comparisons, readable handler results and a resettable audit log. No operating-system command, external HTTP request, email delivery or real file deletion is performed.
+
+| Stage | Guarded default | How to permit / effect shown |
+| --- | --- | --- |
+| 1. Read a document | Allowed immediately | Runs the synthetic document reader and increments Document reads |
+| 2. Send email | Denied pending human review | Select **Reviewer approves ONE synthetic action**; a fictional email enters the outbox; approval automatically resets |
+| 3. Delete file | Denied pending human review | Explicitly approve once; the sample file becomes **Deleted (sandbox)**; Reset restores it |
+| 4. Fetch a URL | Unlisted host denied | Change destination to **Trusted docs host**; offline fixture document loads; no network request |
+| 5. Execute command | Denied pending human review | Explicitly approve **echo** or **pwd**; a toy interpreter returns a string, never invoking a system shell |
+
+**Tour all 5 stages** runs one meaningful guarded attempt per stage: successful read, approved email, denied file deletion, allowlisted offline URL, and approved toy command. It shows an audit trail with five entries. Changing stages or execution modes resets pending approval, so it cannot silently authorize later actions.
+
+**Release gate:** `scripts/test_public_demo.mjs` exercises all five paths and the complete tour. `scripts/test_public_demo_browser.py` opens the site in real headless Chromium, clicks each stage, tests approvals, checks results and a mobile-sized viewport, and refuses unexpected external network requests. Neither test establishes real-model prompt-injection attack resistance.
 
 ## Current status and verified evidence
 
