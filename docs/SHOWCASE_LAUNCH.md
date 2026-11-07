@@ -1,56 +1,55 @@
 # AgentShield public showcase launch runbook
-Last checked: 2026-11-07. Scope: **static interactive product demonstration**, not a live LLM or production security certification.
 
-**Public demo (verified): https://chirayukapoor5.github.io/agentshield/** — Default-branch [deployment run #42362092218](https://github.com/chirayukapoor5/agentshield/actions/runs/42362092218) deployed successfully. GitHub Actions then fetched the public HTTPS URL unauthenticated, observed HTTP **200**, and checked that `id="demo"` and `id="feedback"` are in the served HTML at 2026-11-07 10:01 UTC. Browser interaction tests passed in a simulated DOM; a manual mobile-browser usability review is still recommended.
+Checked: 2026-11-07. **Public functional demo v2:** https://chirayukapoor5.github.io/agentshield/
+
+GitHub Pages [deployment run #42363097365](https://github.com/chirayukapoor5/agentshield/actions/runs/42363097365) passed checkout, the synthetic browser-sandbox functional tests, build, deploy, and public HTTPS verification. The public page and bundled `sandbox.js` independently returned **HTTP 200**; the deployed JavaScript contained the one-time approval implementation. The CI test uses a simulated DOM; independent interactive-browser verification from this environment is blocked by network restrictions.
+
+This is a **synthetic JavaScript tool sandbox** demonstrating SDK-equivalent decisions, not a live Groq/LLM run or an actual execution of the Python AgentShield SDK.
 
 ## Current status and verified evidence
 
-- `public-demo/index.html` is a zero-dependency interactive static page with 5 synthetic tool requests, guarded/unguarded comparison, a guided replay, SDK code example, and an explicit GitHub issue feedback flow.
-- `scripts/verify_public_demo.py` checks expected sections, safety language, no external JavaScript, missing anchors, JavaScript syntax and secret placeholders.
-- `scripts/test_public_demo.mjs` simulates UI actions in a local DOM stub and verifies the protected/unguarded behavior, browser trace flags, and GitHub feedback draft URL.
+- `public-demo/index.html` and `public-demo/sandbox.js` implement five synthetic tool requests, in-memory handlers (fictional read, outbox, file deletion, offline URL fixture), one-use email authorization and denial, local audit log, reset button, three-step walkthrough, copyable Python example, and GitHub feedback issue draft.
+- `scripts/verify_public_demo.py` checks expected sections, safety language, exactly one locally bundled JavaScript file, missing anchors, syntax and secret placeholders.
+- `scripts/test_public_demo.mjs` simulates UI actions in a local DOM stub and asserts denied approval, explicitly allowed one-time approval, approval reset, unguarded in-memory handlers, file effects, sandbox reset, complete guided walkthrough and GitHub issue draft URL.
 - Verified GitHub Actions build: [showcase workflow #42359471308](https://github.com/chirayukapoor5/agentshield/actions/runs/42359471308) — static/JavaScript checks and UI smoke tests passed; deploy job skipped on the PR event.
 - Archive of the passing static build: [preview artifact](https://github.com/chirayukapoor5/agentshield/actions/runs/42359471308/artifacts/13569255940).
 - Initial **push** deployment attempt failed before Pages was configured. The issue was resolved after selecting **GitHub Actions** in repository Pages settings and replacing the incorrect root-level Next.js workflow with the standalone static showcase publisher on `main`.
 - Public developer feedback thread: [GitHub issue #2](https://github.com/chirayukapoor5/agentshield/issues/2). At creation it had **0 external responses**.
 
-## If future Pages deployments fail (one-time admin setup already completed)
+## Publishing and troubleshooting
 
-1. Open [AgentShield Settings → Pages](https://github.com/chirayukapoor5/agentshield/settings/pages).
-2. Under **Build and deployment → Source**, choose **GitHub Actions**. Save.
-3. Go to [Actions → publish-agent-shield-showcase](https://github.com/chirayukapoor5/agentshield/actions/workflows/publish-showcase.yml). Use **Run workflow** on branch `research/multilingual-injection-2026`, or rerun the failed push workflow.
-4. Confirm **build** and **deploy** both succeeded. The deployment job must report a `page_url`; build-only success does not imply public access.
-5. Visit the expected repository Pages URL: `https://chirayukapoor5.github.io/agentshield/`. Treat that address as **expected, not verified live** until an unauthenticated HTTPS request and an interactive browser test succeed.
+GitHub Pages is already enabled with **Source: GitHub Actions**. The release deployment workflow is [`.github/workflows/nextjs.yml` on `main`](https://github.com/chirayukapoor5/agentshield/blob/main/.github/workflows/nextjs.yml); despite its historical filename, it publishes the verified static `public-demo/` folder from the research branch.
 
-Pages is now enabled and the actual site has been verified live. Do **not** add a repository-administration personal access token to fix a deployment. GitHub's default `GITHUB_TOKEN` cannot enable a Pages site on its own.
+If the page needs refreshing, trigger [Deploy AgentShield showcase to Pages](https://github.com/chirayukapoor5/agentshield/actions/workflows/nextjs.yml) on `main` (or update the main workflow) and verify build + deploy + live HTML/JS checks. Research-branch workflow `verify-agent-shield-showcase` only validates and archives previews, so a green PR job is not a Pages deployment.
+
+If you still see the older scripted page, use Ctrl+Shift+R for a full refresh and check that **Email approval callback** and **Simulated outbox** appear.
 
 ### Post-publication smoke checklist
 
-- Open the HTTPS page in a private/incognito browser and on a mobile-width viewport.
-- Choose **Send an email**, then **Without AgentShield**, then **Run**. Expect `outside_policy_boundary` and `handler_executed: false`. This does not mean an actual unguarded handler ran.
-- Switch **With AgentShield**, run again, and expect `denied` and `approval_not_configured`. No actual email should be sent.
-- Choose **Read a document**, run in guarded mode, expect `allowed` but `handler_executed: false` (static replay).
-- Use **Guided walkthrough** and ensure the mode changes.
-- Fill the feedback form using **non-sensitive sample text**; confirm it opens a new GitHub issue draft, but do **not** click Submit merely for a test. Also verify direct [feedback discussion](https://github.com/chirayukapoor5/agentshield/issues/2) is accessible.
-- On success, record the **exact URL, HTTP status, UTC verification time, workflow run number and browser test outcome** below.
+- Visit https://chirayukapoor5.github.io/agentshield/ in a private browser. Confirm the approval dropdown and in-memory outbox count are visible.
+- With **Send an email**, **With AgentShield** and the default **Not configured — deny**, click **Execute sandbox tool**. Expect `denied`, `approval_not_configured`, `handler_executed:false` and outbox count **0**.
+- Change the email approval dropdown to **Ask reviewer → approve one sandbox email**, click Execute. Expect `allowed`, `approved`, `handler_executed:true`, `delivered:false` and outbox count **1**. The approval dropdown automatically resets to `none`.
+- Click Execute once more without re-approving. Expect denial and an unchanged outbox count.
+- Switch **Without AgentShield** and execute the email handler. Expect `outside_policy_boundary` with the fictional handler executed and outbox count **2**. No actual email is sent.
+- Choose **Read a document** to see a read-only fixture handler execute. **Delete a file** is denied with guard and only affects sandbox memory when unguarded; neither path touches device files.
+- Reset the sandbox. Confirm outbox **0**, sample file **Present** and empty audit. Run the guided walkthrough through its three steps.
+- Submit non-sensitive example text through the feedback form, verify that a **GitHub issue draft** opens, but do not post a fake issue just to test.
 
-Public URL: **https://chirayukapoor5.github.io/agentshield/**  
-HTTP result: **200, confirmed by unauthenticated curl inside GitHub Actions at 2026-11-07 10:01 UTC**  
-Live deployment run: **[#42362092218](https://github.com/chirayukapoor5/agentshield/actions/runs/42362092218)**  
-External user feedback count: **0 confirmed at issue creation**
+**Verified deployment:** [#42363097365](https://github.com/chirayukapoor5/agentshield/actions/runs/42363097365), deployed page and `sandbox.js` both returned HTTP 200 at 2026-11-07 10:14 UTC. A standalone external browser interaction test remains unverified due to restricted browser networking in this environment.
 
-## 60-second live walkthrough script
+### 60-second demonstration
 
-**0–10 seconds:** “A tool-using AI agent may read untrusted text, but the dangerous step is when that text influences a privileged tool call. AgentShield puts an authorization check at that boundary.”
+**0–10 sec:** “AgentShield puts an authorization check between an agent tool request and the application's handler.”
 
-**10–23 seconds:** Select **Send an email** and **Without AgentShield**. Run: “An unwrapped function is outside our SDK's enforcement boundary. This browser does not execute tools; it illustrates the risk of not registering the wrapper.”
+**10–25 sec:** Choose **Send an email**; with the guard active and no approval, run it. “The request is denied and the outbox stays at zero.”
 
-**23–40 seconds:** Switch **With AgentShield**, run again: “This tool requires approval. With no approval callback, the policy denies it before the handler runs. This is enforced by the Python SDK's explicit tool registry, not by claiming the model ignores the attack.”
+**25–40 sec:** Choose **Approve one sandbox email** and run. “Now the guard authorizes this *single* call. A fictional email appears in the in-memory outbox; the authorization resets. No real mail is delivered.”
 
-**40–50 seconds:** Select **Read a document** and run: “Authorized read-only actions can still be allowed.”
+**40–50 sec:** Run again to demonstrate denial, then switch to **Without AgentShield** and show that the unguarded fictional handler executes without the policy check.
 
-**50–60 seconds:** Scroll to the SDK snippet and feedback: “If your agent can email, write files, or call external APIs, tell us your stack and the integration blocker. We need real developer evidence before claiming market demand.”
+**50–60 sec:** Show the complete Python SDK callback example and ask developers for their framework, approval needs and trial interest.
 
-Do not call this a real attacker success/failure benchmark. It is a product policy-boundary demonstration with testable behaviors.
+Do not describe this as a real model, actual network/email transmission, AgentDojo attack-success rate, or production security guarantee.
 
 ## Real developer feedback experiment
 
