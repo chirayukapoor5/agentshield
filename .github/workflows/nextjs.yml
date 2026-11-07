@@ -41,6 +41,8 @@ jobs:
           python scripts/verify_public_demo.py
           node scripts/test_public_demo.mjs
           test -s public-demo/index.html
+          grep -q 'sandbox-approval-v2' public-demo/index.html
+          test -s public-demo/sandbox.js
       - name: Package static page
         run: |
           touch public-demo/.nojekyll
@@ -72,9 +74,12 @@ jobs:
           esac
           for attempt in 1 2 3 4 5 6 7 8; do
             code=$(curl --proto '=https' --max-redirs 3 -sS -L --max-time 20 -o /tmp/agentshield-showcase.html -w '%{http_code}' "$PAGE_URL" || true)
-            if [ "$code" = "200" ] && grep -q 'id="demo"' /tmp/agentshield-showcase.html && grep -q 'id="feedback"' /tmp/agentshield-showcase.html; then
-              echo "PUBLIC_DEMO_VERIFIED: $PAGE_URL HTTP $code"
-              exit 0
+            if [ "$code" = "200" ] && grep -q 'id="demo"' /tmp/agentshield-showcase.html && grep -q 'id="feedback"' /tmp/agentshield-showcase.html && grep -q 'sandbox-approval-v2' /tmp/agentshield-showcase.html; then
+              js_code=$(curl --proto '=https' --max-redirs 3 -sS -L --max-time 20 -o /tmp/agentshield-sandbox.js -w '%{http_code}' "${PAGE_URL%/}/sandbox.js" || true)
+              if [ "$js_code" = "200" ] && grep -q 'one-time authorization' /tmp/agentshield-sandbox.js; then
+                echo "PUBLIC_DEMO_V2_VERIFIED: $PAGE_URL HTTP $code; sandbox.js HTTP $js_code"
+                exit 0
+              fi
             fi
             echo "Attempt $attempt: HTTP $code, waiting for Pages propagation"
             sleep 5
