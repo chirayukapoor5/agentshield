@@ -40,7 +40,7 @@
     #result-payload{font-size:12px;max-height:200px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--mint)}
     .sandbox-results details{margin:8px 0 14px}
     .sandbox-results summary{cursor:pointer;color:#c9e6df;font-size:13px}
-    .scoregrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:24px 0}
+    .scoregrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:24px 0}
     .scorepanel{background:#10242e;border:1px solid #345251;border-radius:13px;padding:20px}
     .scorepanel .measure{font-size:30px;letter-spacing:-.04em;line-height:1.2;font-weight:850;color:#d7f7e7;margin:8px 0}
     .scorepanel .metric-label{font-size:12px;color:#a3bac1;font-weight:700;letter-spacing:.03em}
@@ -222,9 +222,10 @@ print(guarded["send_email"](
       </div>
     </section>
     <section id="evidence">
-      <div class="sectionhead"><div class="eyebrow">Verified engineering, limited claims</div><h2>What is tested—and what isn't.</h2><p>These are reproducible engineering checks, NOT an aggregate security rating. AgentShield has one verified real Groq read-only tool call; the live model did not attempt a forbidden tool. Official multilingual AgentDojo defense-efficacy rates are not yet available.</p></div>
+      <div class="sectionhead"><div class="eyebrow">Verified engineering, limited claims</div><h2>What is tested—and what isn't.</h2><p>Engineering test-pass counts are not security efficacy scores. The 10,000 generated cases per Python version exercise authorization rules without model inference. One verified Groq episode routed a read-only tool call but did not attempt an unauthorized action. Official held-out C1–C4 AgentDojo ASR remains unmeasured.</p></div>
       <div class="scoregrid" id="evidence-scorecard" aria-label="Engineering evidence scorecard">
-        <div class="scorepanel"><div class="metric-label">SDK unit + framework tests</div><div class="measure">79 / 79</div><p>All automated assertions passed on Python 3.10 and 3.12. This is test pass coverage, not attacker resistance.</p><a href="https://github.com/chirayukapoor5/agentshield/actions/runs/42369115968" target="_blank" rel="noopener noreferrer">Verify test run ↗</a></div>
+        <div class="scorepanel"><div class="metric-label">SDK unit + framework tests</div><div class="measure">85 / 85</div><p>Automated SDK tests passed on Python 3.10 and 3.12, including malformed-Unicode rejection. Passing tests is not measured attack resistance.</p><a href="https://github.com/chirayukapoor5/agentshield/actions/runs/42371285290" target="_blank" rel="noopener noreferrer">Verify SDK CI ↗</a></div>
+        <div class="scorepanel"><div class="metric-label">Offline authorization stress</div><div class="measure">10,000 / 10,000</div><p>Per Python version: all seeded contract cases passed. Tests include name bypass attempts, URL rules, approvals, malformed batches and multilingual arguments. No real LLM calls.</p><a href="https://github.com/chirayukapoor5/agentshield/blob/research/multilingual-injection-2026/docs/STRESS_10K_REPORT.md" target="_blank" rel="noopener noreferrer">Read case mix and CI evidence ↗</a></div>
         <div class="scorepanel"><div class="metric-label">Synthetic browser stages</div><div class="measure">5 / 5</div><p>All five simulated tool workflows passed desktop and mobile Chromium acceptance. No external tools run.</p><a href="https://github.com/chirayukapoor5/agentshield/actions/runs/42366014251" target="_blank" rel="noopener noreferrer">Verify browser tests ↗</a></div>
         <div class="scorepanel"><div class="metric-label">Measured multilingual attack ASR</div><div class="measure">N/A</div><p>Official held-out C1–C4 trials have not been completed. We do not invent a protection percentage.</p><a href="https://github.com/chirayukapoor5/agentshield/blob/research/multilingual-injection-2026/docs/SCORING_METHODOLOGY.md" target="_blank" rel="noopener noreferrer">Scoring formulas and methods ↗</a></div>
       </div>
