@@ -5,6 +5,17 @@ on:
     branches: [research/multilingual-injection-2026]
     paths:
       - sdk/agentshield_guard/**
+      - sdk/tests/**
+      - sdk/pyproject.toml
+      - scripts/run_guard_stress.py
+      - tests/test_guard_stress.py
+      - .github/workflows/guard-stress-10k.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - sdk/agentshield_guard/**
+      - sdk/tests/**
+      - sdk/pyproject.toml
       - scripts/run_guard_stress.py
       - tests/test_guard_stress.py
       - .github/workflows/guard-stress-10k.yml
