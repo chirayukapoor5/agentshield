@@ -25,10 +25,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
-      - name: Checkout release-ready showcase from research branch
+      - name: Checkout CI-verified five-stage showcase release
         uses: actions/checkout@v4
         with:
-          ref: research/multilingual-injection-2026
+          # Pin to exact research commit with successful offline + Chromium CI.
+          # Update only after reviewing a new passing verification run.
+          ref: b2622feb21f21a26c7c108b823deb226458b0689
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
