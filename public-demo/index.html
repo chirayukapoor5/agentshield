@@ -117,7 +117,7 @@
       </div>
     </section>
     <section id="integration" aria-labelledby="sdk-title">
-      <div class="sectionhead"><div class="eyebrow">Developer integration</div><h2 id="sdk-title">Wrap the functions your agent can call.</h2><p>The returned guarded registry—not the original handlers—must be connected to the agent. Direct calls to unwrapped handlers are outside this protection boundary.</p></div>
+      <div class="sectionhead"><div class="eyebrow">Developer integration</div><h2 id="sdk-title">Wrap the functions your agent can call.</h2><p>The returned guarded registry—not raw handlers—must be connected to the agent. The working Python example below requests human confirmation for a fictional email; the browser sandbox uses its own local approval selector.</p></div>
       <div class="split">
         <div>
           <div class="feature"><strong>Fail-closed tools</strong><span>Unlisted functions are denied before execution.</span></div>
@@ -129,19 +129,34 @@
         <div>
           <div class="code" id="snippet">from agentshield_guard import AgentShield, ToolPolicy
 
-policy = ToolPolicy(
-    read_only_tools={"read_document"},
-    approval_tools={"send_email"},
-)
-shield = AgentShield(policy)
+# Safe, fictional handlers: no email delivery.
+def read_document(id):
+    return {"id": id, "text": "Synthetic note"}
 
-secured = shield.wrap_registry({
+def send_email(to, body):
+    return {"simulated_only": True, "recipient": to}
+
+# Your app must ask a real human, never the LLM.
+def human_approval(tool, args):
+    answer = input(f"Approve {tool} for {args['to']}? [y/N] ")
+    return answer.strip().lower() == "y"
+
+shield = AgentShield(
+    ToolPolicy(
+        read_only_tools={"read_document"},
+        approval_tools={"send_email"},
+    ),
+    approve=human_approval,
+)
+guarded = shield.wrap_registry({
     "read_document": read_document,
     "send_email": send_email,
 })
 
-# Register "secured" with the agent,
-# not your original raw functions.</div>
+print(guarded["read_document"](id="sample-1"))
+print(guarded["send_email"](
+    to="demo@example.org", body="Synthetic only"
+))</div>
           <button class="btn" id="copy-code" type="button">Copy Python example</button>
           <p class="tiny">To run the full offline demonstration: clone the research branch, install <code>./sdk</code>, then run <code>sdk/examples/chat_tool_calls.py</code>.</p>
         </div>
@@ -170,7 +185,7 @@ secured = shield.wrap_registry({
       </div>
     </section>
   </main>
-  <footer class="wrap footer"><span>◇ AgentShield · public synthetic product demo · v0.1</span><span>Open source · No real tool execution · No protection without wrapping handlers</span></footer>
+  <footer class="wrap footer"><span>◇ AgentShield · public synthetic product demo · v0.1</span><span>Open source · In-memory sandbox only · No external tool execution · Python SDK requires wrapped handlers</span></footer>
   <script src="sandbox.js" defer></script>
 </body>
 </html>
