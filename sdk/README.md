@@ -6,9 +6,10 @@ One local Python package, zero runtime dependencies, no secrets or API required.
 python -m pip install ./sdk
 python sdk/examples/quickstart.py
 python sdk/examples/demo_stats.py
+python sdk/examples/registration_check.py
 ```
 
-An app developer must register the **wrapped** functions as agent tools. This SDK does not intercept existing agent calls automatically, cannot prevent a program from calling unwrapped functions, and is not a complete prompt-injection defense.
+The offline registration check asserts that the agent-facing registry contains wrapped handlers, that an allowed read runs, and that an unapproved fictional email has no handler effect. It is a local onboarding regression, not a way to detect all raw-function bypasses in an application.\n\nAn app developer must register the **wrapped** functions as agent tools. This SDK does not intercept existing agent calls automatically, cannot prevent a program from calling unwrapped functions, and is not a complete prompt-injection defense.
 
 ```python
 from agentshield_guard import AgentShield, ToolPolicy
