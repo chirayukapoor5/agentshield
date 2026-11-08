@@ -19,6 +19,12 @@ jobs:
         run: python -m pip install -r backend/requirements.txt
       - name: Compile Python backend
         run: python -m compileall -q backend/app backend/tests
+      - name: Apply schema migrations to clean database
+        working-directory: backend
+        env:
+          SECRET_KEY: ci-only-strong-test-secret-never-use-in-production
+          DATABASE_URL: sqlite:///./ci-migration.sqlite
+        run: python -m alembic upgrade head
       - name: Test tenant isolation and security endpoints
         working-directory: backend
         env:
