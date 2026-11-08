@@ -35,8 +35,14 @@ def create_demo_data() -> None:
         db.close()
 
 
-Base.metadata.create_all(bind=engine)
-create_demo_data()
+if settings.APP_ENV.lower() in {"production", "prod"}:
+    if settings.SECRET_KEY == "change-me-in-production":
+        raise RuntimeError("Production requires a non-default SECRET_KEY")
+    # Production schema changes must be applied through Alembic migrations.
+else:
+    Base.metadata.create_all(bind=engine)
+    if settings.APP_ENV.lower() in {"demo", "local_demo"}:
+        create_demo_data()
 
 app = FastAPI(
     title=settings.APP_NAME,
