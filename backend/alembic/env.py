@@ -6,6 +6,7 @@ from sqlalchemy import engine_from_config, pool
 from app.core.config import settings
 from app.db.session import Base
 from app.models import models  # noqa: F401
+from app.models import security_monitoring  # noqa: F401 - include new telemetry tables in migrations
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace("%", "%%"))
