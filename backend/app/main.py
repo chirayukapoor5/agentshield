@@ -5,6 +5,7 @@ from app.core.config import settings
 from app.core.security import hash_password
 from app.db.session import Base, SessionLocal, engine
 from app.models.models import Organization, User
+from app.models import security_monitoring  # noqa: F401 - register tables before create_all
 
 from app.api.v1.api import api_router
 
