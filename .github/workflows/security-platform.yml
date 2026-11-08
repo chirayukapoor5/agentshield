@@ -1,0 +1,42 @@
+name: security-api-and-dashboard
+on:
+  push:
+    branches: ["research/**"]
+    paths: ["backend/**", "frontend/**", ".github/workflows/security-platform.yml"]
+  pull_request:
+    paths: ["backend/**", "frontend/**", ".github/workflows/security-platform.yml"]
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install backend dependencies
+        run: python -m pip install -r backend/requirements.txt
+      - name: Compile Python backend
+        run: python -m compileall -q backend/app backend/tests
+      - name: Test tenant isolation and security endpoints
+        working-directory: backend
+        env:
+          SECRET_KEY: ci-only-strong-test-secret-never-use-in-production
+          DATABASE_URL: sqlite:///./ci-test.sqlite
+        run: python -m pytest -q tests/test_security_monitoring.py
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run build
