@@ -214,4 +214,3 @@ docs/                  # Architecture, deployment, and threat-model notes
 ## License
 
 MIT. See [LICENSE](./LICENSE).
-
