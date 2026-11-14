@@ -1,0 +1,183 @@
+# AgentShield Guard SDK — early proof of concept
+
+One local Python package, zero runtime dependencies, no secrets or API required.
+
+```bash
+python -m pip install ./sdk
+python sdk/examples/quickstart.py
+python sdk/examples/demo_stats.py
+python sdk/examples/registration_check.py
+```
+
+The offline registration check asserts that the agent-facing registry contains wrapped handlers, that an allowed read runs, and that an unapproved fictional email has no handler effect. It is a local onboarding regression, not a way to detect all raw-function bypasses in an application.\n\nAn app developer must register the **wrapped** functions as agent tools. This SDK does not intercept existing agent calls automatically, cannot prevent a program from calling unwrapped functions, and is not a complete prompt-injection defense.
+
+```python
+from agentshield_guard import AgentShield, ToolPolicy
+
+shield = AgentShield(ToolPolicy(read_only_tools=frozenset({'search'})))
+secured_tools = shield.wrap_registry({'search': my_search_function})
+# Register secured_tools rather than the original functions in your agent framework.
+```
+
+Unlisted calls are denied. State-changing actions need an explicit approval callback. For URL-bearing tools, declare every URL argument and an exact HTTPS hostname allowlist. DNS and redirects still require network-layer enforcement; matching a hostname does not prevent DNS rebinding or hidden redirects. Never treat tool-output text as authoritative instructions.
+
+
+## Deterministic security stress suite (10,000 cases)
+
+```bash
+PYTHONPATH=sdk:. python scripts/run_guard_stress.py \
+  --cases 10000 --seed 20261107 \
+  --output data/runs/guard-stress/summary.json
+```
+
+The [verified CI run](https://github.com/chirayukapoor5/agentshield/actions/runs/42371796465)
+passed **10,000 generated cases per Python version**, with reports for 3.10 and
+3.12. Covered cases include unauthorized tool names, HTTPS destination
+confusion, one-time approvals, audit errors, malformed tool-call batches,
+Unicode-surrogate rejection, and valid international content. The harness
+detects an intentionally monkeypatched fail-open implementation. Review the
+[exact case mix and limits](../docs/STRESS_10K_REPORT.md).
+
+This is **not** a result from 10,000 model-generated prompt injections; no
+model or network access occurs and the pass fraction must not be reported as
+an empirical attack-detection rate.
+
+## LangGraph / LangChain integration (optional)
+
+For an existing LangGraph or LangChain application using **synchronous
+`StructuredTool`** functions, the adapter preserves the model-visible
+argument schemas and puts the real AgentShield authorization gate before the
+registered handler. This is a practical integration using the actual
+`langchain-core` and `langgraph` libraries, not a browser simulation.
+
+From the repository root:
+
+```bash
+python -m pip install -e './sdk[langgraph]'
+python sdk/examples/langgraph_toolnode.py
+```
+
+The runnable example constructs a real `StateGraph(MessagesState)`, adds a
+`ToolNode` built from AgentShield-wrapped tools, compiles it and invokes it
+with synthetic `AIMessage(tool_calls=...)` records. It performs no model
+requests, email delivery or external I/O. Expect one read, two denied email
+calls, and exactly one approved in-memory email.
+
+Minimal integration with your *already defined* LangChain `@tool` functions:
+
+```python
+from agentshield_guard import AgentShield, ToolPolicy, wrap_langchain_tools
+from langgraph.prebuilt import ToolNode
+
+shield = AgentShield(ToolPolicy(
+    read_only_tools={"read_document"},
+    approval_tools={"send_email"},
+), approve=your_human_approval_callback)
+
+# These are existing LangChain StructuredTool instances.
+safe_tools = wrap_langchain_tools(shield, [read_document, send_email])
+node = ToolNode(safe_tools)
+
+# IMPORTANT: also give safe_tools (NOT raw tools) to model.bind_tools(...).
+# Add node to a compiled StateGraph so ToolRuntime is available.
+```
+
+The adapter returns fixed `{"ok":false,"error":"policy_denied"}` tool content
+for rejected tool requests, without running handlers or exposing exception
+details. Agent/tool loops must never interpret these as successful business
+actions. Handler exceptions are sanitized. Your application must make its
+approval callback thread-safe and bind the approval to the precise user/action.
+
+**Explicit limits:** Sync `StructuredTool` only. Async-only tools, injected
+ToolRuntime/state/store arguments, artifact-returning tools and arbitrary
+`BaseTool` subclasses are refused. It does not guard raw tool instances
+that your app continues calling directly; it does not sandbox handlers,
+prevent outbound side effects in a permitted tool, authenticate reviewers,
+or prove prompt-injection resilience. See the
+[runnable LangGraph sample](examples/langgraph_toolnode.py) and
+[test contract](tests/test_langchain_tools.py).
+
+## Policy configuration integrity
+
+`ToolPolicy` snapshots its allowlists and URL-argument declarations at construction.
+Changing the original mutable sets, lists or dictionaries after initialization cannot
+relax authorization checks. Guarded calls now require JSON-compatible argument
+values and execute the deep-copied JSON snapshot that was policy-checked;
+a callback cannot mutate the originally supplied nested arguments to change
+the values executed after approval. The stored URL-argument mapping is read-only, and
+malformed or duplicate argument declarations are rejected. These are local
+configuration-integrity guarantees, **not** complete URL egress enforcement.
+
+Construct a separate `ToolPolicy` and `AgentShield` instance to change policy;
+do not mutate an existing instance. The application remains responsible for
+registering only wrapped tools and for enforcing redirect/DNS safety at the
+network layer.
+
+## OpenAI-compatible tool-call integration (offline)
+
+`dispatch_chat_tool_calls(shield, handlers, tool_calls)` accepts the standard
+chat-completions `tool_calls` envelope (list of plain dictionaries). It
+**internally wraps** the supplied raw Python handlers, validates each tool-call
+ID and strict JSON argument object before executing any call, and returns
+`role='tool'` messages to append to the model conversation. It supports
+approval callbacks and fail-closed auditing through `AgentShield`.
+
+```bash
+PYTHONPATH=sdk python sdk/examples/chat_tool_calls.py
+python -m pytest sdk/tests -q
+```
+
+For model SDK objects, convert each call with `call.model_dump()` first.
+An invalid batch raises `MalformedToolCalls` before any handler runs; callers
+must stop the turn rather than passing the unvalidated calls to other code.
+Unknown or unauthorized functions return a structured refusal to the model.
+This adapter handles *chat-completions tool-call records only*; it does not
+perform provider API calls, vet model output text, isolate Python handlers,
+prevent a handler's secondary network access, or establish an attack-success
+rate. Tool results are untrusted content and should remain so on subsequent
+agent turns. Its bounded inputs do not bound handler execution time or output.
+
+## Bounded live tool-use loop (Groq)
+
+The `run_tool_agent` API now completes multiple chat-completion turns and
+routes **every** local function call through `dispatch_chat_tool_calls`.
+The `GroqChatTransport` uses the fixed Groq chat-completions HTTPS endpoint,
+no extra runtime dependencies, a request timeout, a response-size cap, and refusal of HTTP redirects.
+This is separate from, and does not replace, the original research
+`src.llm.Client` quota ledger. Treat each use of the live SDK transport as
+**independently chargeable** by the provider.
+
+An offline, deterministic full-loop canary demonstration:
+
+```bash
+PYTHONPATH=sdk python scripts/groq_tool_smoke.py --mode mock
+python -m pytest -q sdk/tests
+```
+
+One explicitly opted-in model run (maximum three Groq chat requests):
+
+```bash
+export GROQ_API_KEY="your-private-key"
+PYTHONPATH=sdk python scripts/groq_tool_smoke.py --mode live \\
+  --i-understand-this-makes-real-calls
+```
+
+The live tool-smoke GitHub Actions workflow is intentionally **manual-only**:
+Actions → `groq-local-tool-smoke` → Run workflow. A repository
+`GROQ_API_KEY` secret is required. It emits a bounded, redacted JSON artifact,
+including tool names and whether calls were allowed or refused. Never commit
+the actual credential. The synthetic `send_email` handler has **no** email
+or network capability, even if accidentally permitted.
+
+The model may answer without invoking tools, and a single smoke run cannot
+establish attack success rates. The scripted offline sequence is not evidence
+that a real model followed the malicious text. Tool outputs remain untrusted;
+a caller must not interpret them as system instructions. By design, this SDK
+does not sandbox handlers or prevent a registered handler from making arbitrary
+network requests. Do not hand it real secrets in the sample.
+
+## Evidence and limitations
+
+`demo_stats.py` runs eight deterministic, synthetic policy decisions and prints exact counts. It does not exercise real LLM agents, adaptive attacks, AgentDojo, SaaS policy sync, prompt-injection classifier robustness, or any production deployment. Security tests check fail-closed *wrapper behavior*, not end-to-end agent safety.
+
+Roadmap: framework-specific adapters, immutable policy versions, sandboxed execution and egress firewalling, approval UX, server-side signed policy distribution, trace audit storage, and rigorous AgentDojo evaluation. These features are **not yet implemented**.

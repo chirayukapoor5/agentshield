@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentshield-mcp-ci"
+version = "0.1.0"
+description = "Read-only MCP tools for AgentShield CI metadata and test reports"
+requires-python = ">=3.11"
+dependencies = ["mcp==2.3.0", "httpx==0.28.1", "pydantic==2.14.3", "agentshield-guard>=0.1.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10", "pytest-asyncio>=1,<2"]
+
+[project.scripts]
+agentshield-mcp-ci = "agentshield_mcp_ci.__main__:main"
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agentshield_mcp_ci*"]
