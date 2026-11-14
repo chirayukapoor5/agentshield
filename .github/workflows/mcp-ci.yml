@@ -1,0 +1,39 @@
+name: agentshield-mcp-ci
+on:
+  push:
+    branches: ["research/**", "feature/mcp-ci-observability"]
+    paths: ["integrations/mcp_ci/**", "sdk/**", "scripts/export_ci_test_summary.py", ".github/workflows/mcp-ci.yml"]
+  pull_request:
+    paths: ["integrations/mcp_ci/**", "sdk/**", "scripts/export_ci_test_summary.py", ".github/workflows/mcp-ci.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mcp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install separate MCP integration
+        run: python -m pip install ./sdk './integrations/mcp_ci[test]'
+      - name: Run offline protocol and security tests
+        run: python -m pytest -q integrations/mcp_ci/tests --junitxml=.ci-reports/mcp.xml
+      - name: Run fixture-labelled MCP demonstration
+        run: python integrations/mcp_ci/examples/ci_triage_demo.py --offline
+      - name: Export sanitized test summary
+        if: always() && hashFiles('.ci-reports/mcp.xml') != ''
+        run: python scripts/export_ci_test_summary.py --input .ci-reports/mcp.xml --output .ci-reports/run-${{ github.run_id }}-py-3.12.json --run-id ${{ github.run_id }} --python-version 3.12
+      - name: Upload sanitized summary only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-summary-mcp-ci-py-3.12
+          path: .ci-reports/run-*-py-3.12.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14
