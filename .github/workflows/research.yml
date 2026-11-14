@@ -4,6 +4,8 @@ on:
     branches: ["research/**"]
   pull_request:
     paths: ["src/**", "research/**", "tests/**", "config/**", "scripts/**", ".github/workflows/research.yml"]
+permissions:
+  contents: read
 jobs:
   offline:
     runs-on: ubuntu-latest
@@ -17,7 +19,18 @@ jobs:
       - name: Run offline research and guard stress-harness tests
         env:
           PYTHONPATH: sdk:.
-        run: python -m pytest -q tests research/test_validate_results.py research/test_paired_analysis.py research/test_audit_traces.py
+        run: python -m pytest -q tests research/test_validate_results.py research/test_paired_analysis.py research/test_audit_traces.py --junitxml=.ci-reports/research.xml
+      - name: Export sanitized test summary
+        if: always() && hashFiles('.ci-reports/research.xml') != ''
+        run: python scripts/export_ci_test_summary.py --input .ci-reports/research.xml --output .ci-reports/run-${{ github.run_id }}-py-3.12.json --run-id ${{ github.run_id }} --python-version 3.12
+      - name: Upload sanitized summary only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-summary-research-py-3.12
+          path: .ci-reports/run-*-py-3.12.json
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Smoke test zero-API dry run
         env:
           PYTHONPATH: .

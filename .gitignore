@@ -5,6 +5,9 @@ __pycache__/
 *.db
 .env
 .venv/
+.venv-*/
+*.egg-info/
+.ci-reports/
 venv/
 .pytest_cache/
 .mypy_cache/

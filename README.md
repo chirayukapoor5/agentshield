@@ -68,7 +68,7 @@ Install the pinned AgentDojo package with `make setup` only in an environment wh
 - The scanner must still be deployed in an environment with network egress restricted to public destinations. Application-level checks do not replace infrastructure egress controls.
 - The dashboard loads organization-scoped websites, agents, scans, findings, and audit events. Agent request telemetry, alerts, and live policy enforcement are not implemented.
 - Existing pre-migration verification flags are reset because they were not backed by proof. Old synthetic scan records and findings are excluded from current scan and finding views.
-- An MCP server/tool interface is not implemented yet.
+- A local, read-only MCP interface for this repository's CI history and sanitized test summaries is available in [integrations/mcp_ci](integrations/mcp_ci/). See [setup, threat model and limitations](docs/MCP_CI_INTEGRATION.md). Remote MCP hosting and a website-scanning MCP interface remain unimplemented.
 - Production authentication hardening, background scan jobs, CI security scanning, and independent security review remain incomplete.
 - The demo account and development credentials are for local use only. Replace secrets and credentials before any deployment.
 
