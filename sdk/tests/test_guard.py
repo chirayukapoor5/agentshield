@@ -1,0 +1,192 @@
+import pytest
+from agentshield_guard import AgentShield, DeniedToolCall, ToolPolicy
+
+
+def test_unlisted_tool_fails_closed():
+    shield=AgentShield(ToolPolicy())
+    assert shield.decide("search").allowed is False
+
+
+def test_read_only_explicit_allowlist():
+    shield=AgentShield(ToolPolicy(read_only_tools=frozenset({"lookup"})))
+    assert shield.decide("lookup").allowed
+    assert not shield.decide("lookups").allowed
+
+
+def test_no_side_effect_if_denied():
+    seen=[]
+    shield=AgentShield(ToolPolicy())
+    fn=shield.guard("delete", lambda path: seen.append(path))
+    with pytest.raises(DeniedToolCall):
+        fn(path="secret")
+    assert seen == []
+
+
+def test_approval_required_and_exact_true():
+    policy=ToolPolicy(approval_tools=frozenset({"send"}))
+    assert not AgentShield(policy).decide("send").allowed
+    assert not AgentShield(policy,approve=lambda *_: 1).decide("send").allowed
+    assert AgentShield(policy,approve=lambda *_: True).decide("send").allowed
+
+
+def test_approval_exception_denies():
+    def broken(*_):
+        raise RuntimeError("offline")
+    assert AgentShield(ToolPolicy(approval_tools=frozenset({"send"})),approve=broken).decide("send").reason=="approval_denied"
+
+
+def test_urls_are_exact_and_https_only():
+    policy=ToolPolicy(read_only_tools=frozenset({"fetch"}),
+                      allowed_hosts=frozenset({"docs.example.org"}),
+                      url_args={"fetch": ("url",)})
+    shield=AgentShield(policy)
+    assert shield.decide("fetch", {"url":"https://docs.example.org/a"}).allowed
+    for url in ("http://docs.example.org/a", "https://docs.example.org.evil.test/a",
+                "https://docs.example.org@evil.test", "https://127.0.0.1/a",
+                "https://docs.example.org:8443/a", "https://docs.example.org\\@evil.test/"):
+        assert not shield.decide("fetch", {"url":url}).allowed, url
+
+
+def test_missing_url_arg_fails_closed():
+    shield=AgentShield(ToolPolicy(read_only_tools=frozenset({"fetch"}),
+                 allowed_hosts=frozenset({"docs.example.org"}),url_args={"fetch":("url",)}))
+    assert shield.decide("fetch", {}).reason=="destination_not_allowlisted"
+
+
+def test_audit_failure_denies_before_execution():
+    seen=[]
+    def failed(_):
+        raise OSError("sink unavailable")
+    shield=AgentShield(ToolPolicy(read_only_tools=frozenset({"read"})),audit=failed)
+    with pytest.raises(DeniedToolCall, match="audit_failed"):
+        shield.guard("read",lambda:seen.append(1))()
+    assert seen==[]
+
+
+def test_overlapping_tool_sets_invalid():
+    with pytest.raises(ValueError):
+        ToolPolicy(read_only_tools=frozenset({"x"}),approval_tools=frozenset({"x"}))
+
+
+def test_url_tool_must_be_allowlisted():
+    with pytest.raises(ValueError):
+        ToolPolicy(url_args={"fetch":("url",)})
+
+
+def test_allows_explicitly_approved_execution():
+    seen=[]
+    guard=AgentShield(ToolPolicy(approval_tools=frozenset({"send"})),approve=lambda *_:True)
+    assert guard.guard("send",lambda data:seen.append(data))(data="demo") is None
+    assert seen==["demo"]
+
+
+def test_wrap_registry_requires_registering_wrapped_result():
+    executed=[]
+    shield=AgentShield(ToolPolicy(read_only_tools=frozenset({"lookup"})))
+    original={"lookup":lambda query: executed.append(query), "delete":lambda path: executed.append(path)}
+    secured=shield.wrap_registry(original)
+    secured["lookup"](query="safe")
+    with pytest.raises(DeniedToolCall):
+        secured["delete"](path="synthetic")
+    assert executed==["safe"]
+
+
+def test_wrap_registry_rejects_noncallables():
+    shield=AgentShield(ToolPolicy())
+    with pytest.raises(TypeError):
+        shield.wrap_registry({"bad": "not callable"})
+
+
+def test_policy_snapshots_mutable_inputs():
+    tools = {"fetch"}
+    hosts = {"docs.example.org"}
+    names = ["url"]
+    declared = {"fetch": names}
+    policy = ToolPolicy(read_only_tools=tools, allowed_hosts=hosts, url_args=declared)
+    shield = AgentShield(policy)
+    tools.add("delete")
+    hosts.add("evil.test")
+    names.clear()
+    declared.clear()
+    assert not shield.decide("delete").allowed
+    assert not shield.decide("fetch", {"url": "https://evil.test/"}).allowed
+    assert not shield.decide("fetch", {}).allowed
+    assert shield.decide("fetch", {"url": "https://docs.example.org/"}).allowed
+
+
+def test_policy_url_mapping_is_immutable():
+    policy = ToolPolicy(read_only_tools=frozenset({"fetch"}),
+                        allowed_hosts=frozenset({"docs.example.org"}),
+                        url_args={"fetch": ("url",)})
+    with pytest.raises(TypeError):
+        policy.url_args["fetch"] = ()
+    with pytest.raises((AttributeError, TypeError)):
+        policy.read_only_tools.add("delete")
+
+
+@pytest.mark.parametrize("bad_names", [
+    (), [], ["url", "url"], ["url", 5], "url", {"url"}, ["not-a-name"],
+])
+def test_url_parameter_config_rejects_ambiguous_values(bad_names):
+    with pytest.raises(ValueError):
+        ToolPolicy(read_only_tools=frozenset({"fetch"}),
+                   url_args={"fetch": bad_names})
+
+
+@pytest.mark.parametrize("field_name,bad_value", [
+    ("read_only_tools", "fetch"), ("approval_tools", None),
+    ("allowed_hosts", {"docs.example.org": True}),
+])
+def test_policy_rejects_invalid_collections(field_name, bad_value):
+    with pytest.raises((TypeError, ValueError)):
+        ToolPolicy(**{field_name: bad_value})
+
+
+def test_approval_callback_cannot_modify_executed_nested_argument():
+    original = {"recipient": "approved@example.org"}
+    seen = []
+    def approve(tool, checked):
+        assert checked["payload"]["recipient"] == "approved@example.org"
+        # A caller holding the original Python object can mutate it mid-call.
+        original["recipient"] = "outside@example.org"
+        return True
+    shield = AgentShield(ToolPolicy(approval_tools={"send"}), approve=approve)
+    shield.guard("send", lambda payload: seen.append(payload["recipient"]))(
+        payload=original)
+    assert seen == ["approved@example.org"]
+    assert original["recipient"] == "outside@example.org"
+
+
+def test_non_json_arguments_deny_before_handler():
+    seen = []
+    shield = AgentShield(ToolPolicy(read_only_tools={"lookup"}))
+    with pytest.raises(DeniedToolCall, match="invalid_tool_arguments"):
+        shield.guard("lookup", lambda value: seen.append(value))(value=object())
+    assert seen == []
+
+
+
+@pytest.mark.parametrize("value", [
+    "\ud800",
+    {"text": "\udfff"},
+    {"nested": [{"bad\ud800key": "synthetic"}]},
+    ["valid", {"text": "\ud800"}],
+])
+def test_core_guard_rejects_lone_surrogates_before_handler(value):
+    executed = []
+    guarded = AgentShield(
+        ToolPolicy(read_only_tools={"lookup"})
+    ).guard("lookup", lambda payload: executed.append(payload))
+    with pytest.raises(DeniedToolCall, match="invalid_tool_arguments"):
+        guarded(payload=value)
+    assert executed == []
+
+
+def test_core_guard_accepts_valid_international_unicode_and_emoji():
+    executed = []
+    payload = {"text": "English 日本語 العربية 🛡️", "nested": ["🌐", "é", "e\u0301"]}
+    guarded = AgentShield(
+        ToolPolicy(read_only_tools={"lookup"})
+    ).guard("lookup", lambda payload: executed.append(payload))
+    guarded(payload=payload)
+    assert executed == [payload]
