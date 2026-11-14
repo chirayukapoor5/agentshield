@@ -32,6 +32,46 @@ Source: [sdk/](sdk/) · [documentation](sdk/README.md) · [reproduced local demo
 
 ---
 
+## Read-only MCP CI intelligence
+
+The [MCP integration](integrations/mcp_ci/) lets a local MCP host inspect real GitHub Actions runs for `chirayukapoor5/agentshield` on `research/multilingual-injection-2026` and read sanitized local test summaries. It uses the official MCP Python SDK v2, strict typed inputs, bounded outputs, and the existing AgentShield authorization guard for every tool. The default transport is **stdio**, with no public endpoint.
+
+| Tool | Purpose |
+| --- | --- |
+| `list_ci_runs` | List recent runs for an allowlisted workflow |
+| `get_ci_run` | Read run/job outcomes and failed step numbers |
+| `get_test_summary` | Read sanitized test counts and duration |
+| `list_failed_tests` | List bounded, hashed failure/error identifiers |
+
+From the repository root, create a separate Python 3.12 environment:
+
+```powershell
+py -3.12 -m venv .venv-mcp
+.venv-mcp\Scripts\Activate.ps1
+python -m pip install ./sdk './integrations/mcp_ci[test]'
+python -m agentshield_mcp_ci
+```
+
+On Linux/macOS, create it with `python3.12 -m venv .venv-mcp` and activate with `source .venv-mcp/bin/activate`. Configure your MCP host to launch that environment's Python with `-m agentshield_mcp_ci`.
+
+Run tests or a demonstration separately:
+
+```bash
+python -m pytest -q integrations/mcp_ci/tests
+python integrations/mcp_ci/examples/ci_triage_demo.py --offline
+python integrations/mcp_ci/examples/ci_triage_demo.py --live
+```
+
+Offline mode exercises all four tools through a real MCP client and labels synthetic data with `is_fixture=true`. Live mode reads actual GitHub metadata without substituting fixtures. Public metadata needs no credentials; optional `GITHUB_TOKEN` credentials should grant only Actions:read for this repository. To serve operator-verified local JSON reports, set `AGENTSHIELD_REPORT_DIR`; report filenames are `run-RUN_ID-py-VERSION.json`.
+
+**Verified implementation results (November 14, 2026, commit `a571e028abb57c70d11b6ae9209c44564b06f784`):** 78 integration tests passed, including in-memory and subprocess stdio protocol tests; all 107 core SDK tests passed on both Python 3.10 and 3.12. [MCP CI](https://github.com/chirayukapoor5/agentshield/actions/runs/43579313025), [SDK CI](https://github.com/chirayukapoor5/agentshield/actions/runs/43579313021), and [research CI](https://github.com/chirayukapoor5/agentshield/actions/runs/43579313073) passed. Four sanitized JSON artifacts were verified across those runs, including separate SDK matrix versions.
+
+**Limits:** automatic remote artifact ZIP retrieval is unsupported; missing local reports return `report_unavailable`. CI uploads sanitized JSON only, without raw JUnit, logs or tracebacks. Local report provenance must be verified by the operator. The optional bounded Groq model demo is manual opt-in and fixture-only; its mocked tests do not establish real-model success. Remote hosting, production readiness and general prompt-injection protection are not claimed. Core SDK Python 3.10 support is unchanged.
+
+See the [setup guide, schemas, report pipeline and threat model](docs/MCP_CI_INTEGRATION.md) and [implementation PR](https://github.com/chirayukapoor5/agentshield/pull/3).
+
+---
+
 ## Research track: multilingual adaptive prompt injection (November 2026)
 
 The original AgentShield SaaS remains a **website-scanning prototype**. A separate, experimental research package lives in [research/README.md](research/README.md). Its analysis plan is in [docs/ANALYSIS_PLAN.md](docs/ANALYSIS_PLAN.md). No full AgentDojo attack evaluations or per-language ASR comparisons have been published, and no measured attack-success rates or task-utility results are claimed. The bounded Groq tool-use smoke is separate from AgentDojo benchmarking.
@@ -59,6 +99,7 @@ Install the pinned AgentDojo package with `make setup` only in an environment wh
 - Audit-event listing and JSON report generation.
 - FastAPI OpenAPI documentation.
 - A Next.js dashboard with sign-in, organization-scoped website/agent/finding/audit data, and website registration.
+- A local, read-only MCP CI interface with four guarded tools, sanitized test-report exports and protocol/security tests.
 
 ## Current limitations
 
@@ -68,7 +109,7 @@ Install the pinned AgentDojo package with `make setup` only in an environment wh
 - The scanner must still be deployed in an environment with network egress restricted to public destinations. Application-level checks do not replace infrastructure egress controls.
 - The dashboard loads organization-scoped websites, agents, scans, findings, and audit events. Agent request telemetry, alerts, and live policy enforcement are not implemented.
 - Existing pre-migration verification flags are reset because they were not backed by proof. Old synthetic scan records and findings are excluded from current scan and finding views.
-- A local, read-only MCP interface for this repository's CI history and sanitized test summaries is available in [integrations/mcp_ci](integrations/mcp_ci/). See [setup, threat model and limitations](docs/MCP_CI_INTEGRATION.md). Remote MCP hosting and a website-scanning MCP interface remain unimplemented.
+- Remote MCP hosting, automatic remote test-artifact retrieval and a website-scanning MCP interface remain unimplemented. The local CI interface is described above.
 - Production authentication hardening, background scan jobs, CI security scanning, and independent security review remain incomplete.
 - The demo account and development credentials are for local use only. Replace secrets and credentials before any deployment.
 
@@ -173,3 +214,4 @@ docs/                  # Architecture, deployment, and threat-model notes
 ## License
 
 MIT. See [LICENSE](./LICENSE).
+
