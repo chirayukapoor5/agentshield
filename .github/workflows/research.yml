@@ -29,6 +29,7 @@ jobs:
         with:
           name: ci-summary-research-py-3.12
           path: .ci-reports/run-*-py-3.12.json
+          include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 14
       - name: Smoke test zero-API dry run
